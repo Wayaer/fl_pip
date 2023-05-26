@@ -1,0 +1,25 @@
+name: fl_pip
+description: A new Flutter project.
+version: 0.0.1
+
+environment:
+  sdk: '>=2.18.0 <4.0.0'
+  flutter: ">=2.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^2.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.fl.pip
+        pluginClass: FlPipPlugin
+      ios:
+        pluginClass: FlPipPlugin
+      macos:
+        pluginClass: FlPipPlugin

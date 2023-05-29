@@ -2,11 +2,11 @@
 
 ## Use configuration
 
-- ios configuration
-  `Signing & Capabilities` -> `Capability` Add `BackgroundModes` check `Audio,AirPlay,And Picture in Picture`
+- ios 配置 : `Signing & Capabilities` -> `Capability` 添加 `BackgroundModes` 勾选 `Audio,AirPlay,And Picture in Picture`
+- ios configuration : `Signing & Capabilities` -> `Capability` Add `BackgroundModes` check `Audio,AirPlay,And Picture in Picture`
 
-- android configuration
-  `android/app/src/main/${your package name}/MainActivity`,
+- android 配置 : `android/app/src/main/${your package name}/MainActivity` 修改 MainActivity 继承,
+- android configuration : `android/app/src/main/${your package name}/MainActivity`,
 
 ```kotlin
 
@@ -14,7 +14,15 @@ class MainActivity : FlPiPActivity()
 
 ```
 
-`android/app/src/main/AndroidManifest.xml`, add ` android:supportsPictureInPicture="true"`
+```java
+
+class MainActivity extends FlPiPActivity {
+
+}
+
+```
+
+android AndroidManifest file `android/app/src/main/AndroidManifest.xml`, add ` android:supportsPictureInPicture="true"`
 
 ```xml
 

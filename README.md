@@ -23,11 +23,6 @@ class MainActivity : FlPiPActivity()
 
 ```HTML
 
-<video id="video" controls="" preload="none" poster="Android">
-    <source id="mp4" src="./example/assets/android.mp4" type="video/mp4">
-</video>
-
-<video id="video" controls="" preload="none" poster="iOS">
-    <source id="mp4" src="./example/assets/ios.mp4" type="video/mp4">
-</video>
+<video src="https://github.com/Wayaer/fl_pip/blob/a4313a9f24bf79142a082884038676e09ceb961e/example/assets/android.mp4" controls="controls" width="500" height="300"></video>
+<video src="https://github.com/Wayaer/fl_pip/blob/a4313a9f24bf79142a082884038676e09ceb961e/example/assets/ios.mp4" controls="controls" width="500" height="300"></video>
 ```

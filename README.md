@@ -21,5 +21,5 @@ class MainActivity : FlPiPActivity()
 </application>
 ```
 
-![android](https://github.com/Wayaer/fl_pip/blob/a4313a9f24bf79142a082884038676e09ceb961e/example/assets/android.gif)
-![ios](https://github.com/Wayaer/fl_pip/blob/a4313a9f24bf79142a082884038676e09ceb961e/example/assets/ios.gif)
+![android](https://github.com/Wayaer/fl_pip/blob/example/assets/android.gif)
+![ios](https://github.com/Wayaer/fl_pip/blob/example/assets/ios.gif)

@@ -28,7 +28,7 @@ class _PiPBuilderState extends State<PiPBuilder> {
       final value = await widget.pip.isAvailable;
       if (!value) return;
       widget.pip.status.addListener(listener);
-      await widget.pip.isActive();
+      await widget.pip.isActive;
     });
   }
 
@@ -46,7 +46,16 @@ class _PiPBuilderState extends State<PiPBuilder> {
   }
 }
 
-enum PiPStatus { enabled, disabled, unavailable }
+enum PiPStatus {
+  /// Show picture in picture
+  enabled,
+
+  /// Does not display picture-in-picture
+  disabled,
+
+  /// Picture-in-picture is not supported
+  unavailable
+}
 
 class FlPiP {
   factory FlPiP() => _singleton ??= FlPiP._();
@@ -67,6 +76,8 @@ class FlPiP {
 
   final ValueNotifier<PiPStatus> status = ValueNotifier(PiPStatus.unavailable);
 
+  /// 开启画中画
+  /// Open picture-in-picture
   Future<PiPStatus> enable({
     required FlPiPAndroidConfig androidConfig,
     required FlPiPiOSConfig iosConfig,
@@ -81,25 +92,30 @@ class FlPiP {
     return status.value;
   }
 
-  /// 弹窗是否显示
-  Future<PiPStatus> isActive() async {
+  /// 画中画状态
+  /// Picture-in-picture window state
+  Future<PiPStatus> get isActive async {
     final int? state = await _channel.invokeMethod<int>('isActive');
     status.value = PiPStatus.values[state ?? 2];
     return status.value;
   }
 
-  /// 是否支持
+  /// 是否支持画中画
+  /// Whether to support picture in picture
   Future<bool> get isAvailable async {
     final bool? state = await _channel.invokeMethod('available');
     return state ?? false;
   }
 
   /// 切换前后台
-  Future<void> toggle(AppLifecycleState state) =>
-      _channel.invokeMethod('toggle', state == AppLifecycleState.foreground);
+  /// Toggle front and back
+  /// ios仅支持切换后台
+  /// ios supports background switching only
+  Future<void> toggle(AppState state) =>
+      _channel.invokeMethod('toggle', state == AppState.foreground);
 }
 
-enum AppLifecycleState {
+enum AppState {
   /// 前台
   foreground,
 
@@ -107,7 +123,8 @@ enum AppLifecycleState {
   background,
 }
 
-/// android 配置信息
+/// android 画中画配置
+/// android picture-in-picture configuration
 class FlPiPAndroidConfig {
   FlPiPAndroidConfig({
     this.aspectRatio = const Rational.square(),
@@ -118,7 +135,8 @@ class FlPiPAndroidConfig {
   Map<String, dynamic> toMap() => aspectRatio.toMap();
 }
 
-/// ios 配置信息
+/// ios 画中画配置
+/// ios picture-in-picture configuration
 class FlPiPiOSConfig {
   FlPiPiOSConfig({
     this.path = 'assets/landscape.mp4',
@@ -127,17 +145,20 @@ class FlPiPiOSConfig {
     this.enablePlayback = false,
   });
 
-  ///  ios 需要的视频路径
-  ///  用于修改ios悬浮框尺寸的视频地址
+  /// 视频路径 用于修修改画中画尺寸
+  /// The video path is used to modify the size of the picture in picture
   final String path;
 
-  /// ios 配置视频地址的 packageName
+  /// 配置视频地址的 packageName
+  /// Set packageName to the video address
   final String? packageName;
 
-  /// 开启播放控制
+  /// 显示播放控制
+  /// Display play control
   final bool enableControls;
 
   /// 开启播放速度
+  /// Turn on playback speed
   final bool enablePlayback;
 
   Map<String, dynamic> toMap() => {
@@ -148,7 +169,8 @@ class FlPiPiOSConfig {
       };
 }
 
-/// android pip 宽高比
+/// android 画中画宽高比
+/// android picture in picture aspect ratio
 class Rational {
   final int numerator;
   final int denominator;
@@ -205,17 +227,6 @@ class RationalNotMatchingAndroidRequirementsException implements Exception {
       'Android-supported aspect ratios. Boundaries: '
       'min: 1/2.39, max: 2.39/1. '
       ')';
-}
-
-extension ExtensionRect on Rect {
-  Map<String, double> toLTWH() => {
-        'left': left,
-        'top': top,
-        'width': width,
-        'height': height,
-        'right': right,
-        'bottom': bottom
-      };
 }
 
 bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;

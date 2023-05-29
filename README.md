@@ -23,4 +23,4 @@ class MainActivity : FlPiPActivity()
 
 | android | ios                                                                                       |
 | --- |-------------------------------------------------------------------------------------------|
-| <img src="https://github.com/Wayaer/fl_pip/raw/main/example/assets/android.gif" width="100%"/> | <img src="https://github.com/Wayaer/fl_pip/raw/main/example/assets/ios.gif" width="60%"/> |
+| <img src="https://github.com/Wayaer/fl_pip/raw/main/example/assets/android.gif" width="100%"/> | <img src="https://github.com/Wayaer/fl_pip/raw/main/example/assets/ios.gif" width="80%"/> |

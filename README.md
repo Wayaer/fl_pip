@@ -21,5 +21,6 @@ class MainActivity : FlPiPActivity()
 </application>
 ```
 
-![android](https://github.com/Wayaer/fl_pip/blob/example/assets/android.gif)
-![ios](https://github.com/Wayaer/fl_pip/blob/example/assets/ios.gif)
+| android | ios |
+| --- | --- |
+| <img src="https://github.com/Wayaer/fl_pip/raw/main/example/assets/android.gif" width="100%"/> |  <img src="https://github.com/Wayaer/fl_pip/raw/main/example/assets/ios.gif" width="48%"/> |

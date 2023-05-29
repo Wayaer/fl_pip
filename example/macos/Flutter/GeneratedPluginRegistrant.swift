@@ -8,5 +8,5 @@ import Foundation
 import fl_pip
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
-  FlPipPlugin.register(with: registry.registrar(forPlugin: "FlPipPlugin"))
+  FlPiPPlugin.register(with: registry.registrar(forPlugin: "FlPiPPlugin"))
 }

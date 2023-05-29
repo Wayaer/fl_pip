@@ -3,7 +3,7 @@ import Flutter
 import Foundation
 import UIKit
 
-public class FlPipPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerDelegate {
+public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerDelegate {
     private var registrar: FlutterPluginRegistrar
     private var playerLayer: AVPlayerLayer?
     private var player: AVPlayer?
@@ -14,7 +14,7 @@ public class FlPipPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
 
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "fl_pip", binaryMessenger: registrar.messenger())
-        let instance = FlPipPlugin(channel, registrar)
+        let instance = FlPiPPlugin(channel, registrar)
         registrar.addMethodCallDelegate(instance, channel: channel)
     }
 

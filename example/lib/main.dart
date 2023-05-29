@@ -1,8 +1,5 @@
-import 'dart:math';
-
 import 'package:fl_pip/fl_pip.dart';
 import 'package:flutter/material.dart';
-import 'dart:async';
 
 void main() {
   runApp(MaterialApp(theme: ThemeData.dark(), home: const MyApp()));
@@ -15,68 +12,48 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  final floating = Floating();
-  ValueNotifier<int> num = ValueNotifier(0);
-  late Timer timer;
-
+class _MyAppState extends State<MyApp> {
   @override
-  void initState() {
-    super.initState();
-    timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      num.value = num.value + 1;
-    });
-    WidgetsBinding.instance.addObserver(this);
-  }
+  Widget build(BuildContext context) => PiPBuilder(
+      pip: FlPiP(),
+      builder: (PiPStatus status) {
+        switch (status) {
+          case PiPStatus.enabled:
+            return buildEnabled;
+          case PiPStatus.disabled:
+            return builderDisabled;
+          case PiPStatus.unavailable:
+            return buildUnavailable;
+        }
+      });
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    floating.dispose();
-    timer.cancel();
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState lifecycleState) {
-    if (lifecycleState == AppLifecycleState.inactive) {
-      floating.enable(aspectRatio: const Rational.square());
-    }
-  }
-
-  Future<void> enablePip(BuildContext context) async {
-    final rational = const Rational.landscape();
-    final screenSize =
-        MediaQuery.of(context).size * MediaQuery.of(context).devicePixelRatio;
-    final status = await floating.enable(
-      aspectRatio: rational,
-      sourceRectHint: Rectangle<int>(20, 20, screenSize.width.toInt(), 200),
-    );
-    debugPrint('PiP enabled? $status');
-  }
-
-  @override
-  Widget build(BuildContext context) => PiPSwitcher(
-      childWhenDisabled: scaffold(FutureBuilder<bool>(
-          future: floating.isPipAvailable,
-          initialData: false,
-          builder: (context, snapshot) => snapshot.data ?? false
-              ? FloatingActionButton.extended(
-                  onPressed: () => enablePip(context),
-                  label: const Text('Enable PiP'),
-                  icon: const Icon(Icons.picture_in_picture),
-                )
-              : const Card(
-                  child: Text('PiP unavailable'),
-                ))),
-      childWhenEnabled: scaffold());
-
-  Widget scaffold([Widget? floatingActionButton]) => Scaffold(
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: floatingActionButton,
-      appBar: AppBar(title: const Text("appBar")),
+  Widget get buildEnabled => Scaffold(
       body: Container(
-          child: ValueListenableBuilder(
-              valueListenable: num,
-              builder: (_, int num, __) => Text('$num'))));
+          alignment: Alignment.center, child: const Text('PiPStatus enabled')));
+
+  Widget get builderDisabled => Scaffold(
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: FloatingActionButton.extended(
+          onPressed: () {
+            FlPiP().enable(
+                iosConfig:
+                    FlPiPiOSConfig(rect: const Rect.fromLTWH(0, 0, 1, 1)),
+                androidConfig: FlPiPAndroidConfig(
+                    aspectRatio: const Rational.square(),
+                    rect: const Rect.fromLTWH(10, 10, 200, 200)));
+          },
+          label: const Text('Enable PiP'),
+          icon: const Icon(Icons.picture_in_picture)),
+      body: Container(
+          alignment: Alignment.center,
+          child: const Text('PiPStatus disabled')));
+
+  Widget get buildUnavailable => Scaffold(
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: FloatingActionButton.extended(
+          onPressed: () {
+            FlPiP().isAvailable;
+          },
+          label: const Text('PiP unavailable')),
+      appBar: AppBar(title: const Text("PiP unavailable")));
 }

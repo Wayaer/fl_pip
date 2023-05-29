@@ -19,8 +19,8 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 
-/** FlPipPlugin */
-class FlPipPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
+/** FlPiPPlugin */
+class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     companion object {
         lateinit var channel: MethodChannel
@@ -33,7 +33,6 @@ class FlPipPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "fl_pip")
         channel.setMethodCallHandler(this)
         context = flutterPluginBinding.applicationContext
-
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
@@ -41,8 +40,7 @@ class FlPipPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         when (call.method) {
             "enable" -> {
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-
-                    result.success(false)
+                    result.success(2)
                     return
                 }
                 val args = call.arguments as Map<*, *>
@@ -50,24 +48,33 @@ class FlPipPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                     setAspectRatio(Rational(args["numerator"] as Int, args["denominator"] as Int))
                     setSourceRectHint(
                         Rect(
-                            args["left"] as Int,
-                            args["top"] as Int,
-                            args["right"] as Int,
-                            args["bottom"] as Int
+                            (args["left"] as Double).toInt(),
+                            (args["top"] as Double).toInt(),
+                            (args["right"] as Double).toInt(),
+                            (args["bottom"] as Double).toInt()
                         )
                     )
                 }
-//                activity.onPictureInPictureModeChanged()
-                result.success(activity.enterPictureInPictureMode(builder.build()))
+                result.success(if (activity.enterPictureInPictureMode(builder.build())) 0 else 1)
             }
 
-            "isActive" -> result.success(activity.isInPictureInPictureMode)
-            "isSupported" -> result.success(activity.packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE))
+            "isActive" -> {
+                val isAvailable =
+                    activity.packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE);
+                if (isAvailable) {
+                    result.success(if (activity.isInPictureInPictureMode) 0 else 1)
+                } else {
+                    result.success(2)
+                }
+            }
+
+            "available" -> result.success(activity.packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE))
             "toggle" -> {
                 val state = call.arguments as Boolean
                 if (state) {
                     /// 切换前台
-                    front()
+                    val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                    am.moveTaskToFront(activity.taskId, ActivityManager.MOVE_TASK_WITH_HOME)
                 } else {
                     /// 切换后台
                     val intent = Intent(Intent.ACTION_MAIN)
@@ -81,10 +88,6 @@ class FlPipPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
     }
 
-    private fun front() {
-        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        am.moveTaskToFront(activity.taskId, ActivityManager.MOVE_TASK_WITH_HOME)
-    }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)

@@ -18,8 +18,8 @@ flutter:
     platforms:
       android:
         package: com.fl.pip
-        pluginClass: FlPipPlugin
+        pluginClass: FlPiPPlugin
       ios:
-        pluginClass: FlPipPlugin
+        pluginClass: FlPiPPlugin
       macos:
-        pluginClass: FlPipPlugin
+        pluginClass: FlPiPPlugin

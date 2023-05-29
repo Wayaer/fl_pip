@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-  package="com.fl.pip">
+    package="com.fl.pip">
 
     <uses-permission android:name="android.permission.REORDER_TASKS" />
 </manifest>

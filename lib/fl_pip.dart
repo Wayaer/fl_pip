@@ -1,146 +1,160 @@
 import 'dart:async';
-import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Widget switching utility.
-///
-/// Depending on current PiP status will render [childWhenEnabled]
-/// or [childWhenDisabled] widget.
-class PiPSwitcher extends StatefulWidget {
-  /// Floating instance that the listener will connect to.
-  ///
-  /// It may be provided by the instance user. If not, the widget
-  /// will create it's own Floating instance.
-  final Floating? floating;
+typedef PiPBuilderCallback = Widget Function(PiPStatus status);
 
-  /// Child to render when PiP is enabled
-  final Widget childWhenEnabled;
+class PiPBuilder extends StatefulWidget {
+  const PiPBuilder({
+    super.key,
+    required this.pip,
+    required this.builder,
+  });
 
-  /// Child to render when PiP is disabled or unavailable.
-  final Widget childWhenDisabled;
-
-  const PiPSwitcher({
-    Key? key,
-    required this.childWhenEnabled,
-    required this.childWhenDisabled,
-    this.floating,
-  }) : super(key: key);
+  final FlPiP pip;
+  final PiPBuilderCallback builder;
 
   @override
-  State<PiPSwitcher> createState() => _PipAwareState();
+  State<PiPBuilder> createState() => _PiPBuilderState();
 }
 
-class _PipAwareState extends State<PiPSwitcher> {
-  late final Floating _floating = widget.floating ?? Floating();
-
+class _PiPBuilderState extends State<PiPBuilder> {
   @override
-  void dispose() {
-    if (widget.floating == null) {
-      _floating.dispose();
-    }
-    super.dispose();
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final value = await widget.pip.isAvailable;
+      if (!value) return;
+      widget.pip.status.addListener(listener);
+      await widget.pip.isActive();
+    });
+  }
+
+  void listener() {
+    if (mounted) setState(() {});
   }
 
   @override
-  Widget build(BuildContext context) => StreamBuilder(
-        stream: _floating.pipStatus$,
-        initialData: PiPStatus.disabled,
-        builder: (context, snapshot) => snapshot.data == PiPStatus.enabled
-            ? widget.childWhenEnabled
-            : widget.childWhenDisabled,
-      );
+  Widget build(BuildContext context) => widget.builder(widget.pip.status.value);
+
+  @override
+  void dispose() {
+    widget.pip.status.removeListener(listener);
+    super.dispose();
+  }
 }
 
 enum PiPStatus { enabled, disabled, unavailable }
 
-class Floating {
+class FlPiP {
+  factory FlPiP() => _singleton ??= FlPiP._();
+
+  FlPiP._() {
+    _channel.setMethodCallHandler((call) async {
+      switch (call.method) {
+        case "onPiPStatus":
+          final state = call.arguments as int;
+          status.value = PiPStatus.values[state];
+          print('onPiPStatus : ${status.value}');
+      }
+    });
+  }
+
+  static FlPiP? _singleton;
+
   final _channel = const MethodChannel('fl_pip');
-  final _controller = StreamController<PiPStatus>();
-  final Duration _probeInterval;
-  Timer? _timer;
-  Stream<PiPStatus>? _stream;
 
-  Floating({
-    Duration probeInterval = const Duration(milliseconds: 10),
-  }) : _probeInterval = probeInterval;
+  final ValueNotifier<PiPStatus> status = ValueNotifier(PiPStatus.unavailable);
 
-  Future<bool> get isPipAvailable async {
-    final bool? supportsPip = await _channel.invokeMethod('pipAvailable');
-    return supportsPip ?? false;
-  }
-
-  Future<PiPStatus> get pipStatus async {
-    if (!await isPipAvailable) {
-      return PiPStatus.unavailable;
-    }
-    final bool? inPipAlready = await _channel.invokeMethod('inPipAlready');
-    return inPipAlready ?? false ? PiPStatus.enabled : PiPStatus.disabled;
-  }
-
-  Stream<PiPStatus> get pipStatus$ {
-    _timer ??= Timer.periodic(
-      _probeInterval,
-      (_) async => _controller.add(await pipStatus),
-    );
-    _stream ??= _controller.stream.asBroadcastStream();
-    return _stream!.distinct();
-  }
-
-  /// Turns on PiP mode.
-  ///
-  /// When enabled, PiP mode can be ended by the user via system UI.
-  ///
-  /// PiP may be unavailable because of system settings managed
-  /// by admin or device manufacturer. Also, the device may
-  /// have Android version that was released without this feature.
-  ///
-  /// Provide [aspectRatio] to override default 16/9 aspect ratio.
-  /// [aspectRatio] must fit into Android-supported values:
-  /// min: 1/2.39, max: 2.39/1, otherwise [RationalNotMatchingAndroidRequirementsException]
-  /// will be thrown.
-  /// Note: this will not make any effect on Android SDK older than 26.
   Future<PiPStatus> enable({
-    Rational aspectRatio = const Rational.landscape(),
-    Rectangle<int>? sourceRectHint,
+    required FlPiPAndroidConfig androidConfig,
+    required FlPiPiOSConfig iosConfig,
   }) async {
-    if (!aspectRatio.fitsInAndroidRequirements) {
-      throw RationalNotMatchingAndroidRequirementsException(aspectRatio);
+    if (_isAndroid && !(androidConfig.aspectRatio.fitsInAndroidRequirements)) {
+      throw RationalNotMatchingAndroidRequirementsException(
+          androidConfig.aspectRatio);
     }
-
-    final bool? enabledSuccessfully = await _channel.invokeMethod(
-      'enablePip',
-      {
-        ...aspectRatio.toMap(),
-        if (sourceRectHint != null)
-          'sourceRectHintLTRB': [
-            sourceRectHint.left,
-            sourceRectHint.top,
-            sourceRectHint.right,
-            sourceRectHint.bottom,
-          ]
-      },
-    );
-    return enabledSuccessfully ?? false
-        ? PiPStatus.enabled
-        : PiPStatus.unavailable;
+    final int? state = await _channel.invokeMethod<int>(
+        'enable', _isAndroid ? androidConfig.toMap() : iosConfig.toMap());
+    status.value = PiPStatus.values[state ?? 2];
+    return status.value;
   }
 
-  void dispose() {
-    _timer?.cancel();
-    _controller.close();
+  /// 弹窗是否显示
+  Future<PiPStatus> isActive() async {
+    final int? state = await _channel.invokeMethod<int>('isActive');
+    status.value = PiPStatus.values[state ?? 2];
+    return status.value;
   }
+
+  /// 是否支持
+  Future<bool> get isAvailable async {
+    final bool? state = await _channel.invokeMethod('available');
+    return state ?? false;
+  }
+
+  /// 切换前后台
+  Future<void> toggle(AppLifecycleState state) =>
+      _channel.invokeMethod('toggle', state == AppLifecycleState.foreground);
 }
 
-/// Represents rational in [numerator]/[denominator] notation.
+enum AppLifecycleState {
+  /// 前台
+  foreground,
+
+  /// 后台
+  background,
+}
+
+abstract class FlPiPConfig {
+  FlPiPConfig({required this.rect});
+
+  ///  ios 悬浮框弹出前视频的初始大小
+  ///  android 窗口大小
+  final Rect rect;
+}
+
+/// android 配置信息
+class FlPiPAndroidConfig extends FlPiPConfig {
+  FlPiPAndroidConfig({
+    required super.rect,
+    this.aspectRatio = const Rational.square(),
+  });
+
+  final Rational aspectRatio;
+
+  Map<String, dynamic> toMap() => aspectRatio.toMap()..addAll(rect.toLTWH());
+}
+
+/// ios 配置信息
+class FlPiPiOSConfig extends FlPiPConfig {
+  FlPiPiOSConfig({
+    required super.rect,
+    this.path = 'assets/landscape.mp4',
+    this.packageName = 'fl_pip',
+  });
+
+  ///  ios 需要的视频路径
+  ///  用于修改ios悬浮框尺寸的视频地址
+  final String path;
+
+  /// ios 配置视频地址的 packageName
+  final String? packageName;
+
+  Map<String, dynamic> toMap() =>
+      {'packageName': packageName, 'path': path}..addAll(rect.toLTWH());
+}
+
+/// android pip 宽高比
 class Rational {
   final int numerator;
   final int denominator;
 
   double get aspectRatio => numerator / denominator;
 
-  const Rational(this.numerator, this.denominator);
+  const Rational({required this.numerator, required this.denominator});
 
   const Rational.square()
       : numerator = 1,
@@ -158,19 +172,11 @@ class Rational {
   String toString() =>
       'Rational(numerator: $numerator, denominator: $denominator)';
 
-  Map<String, dynamic> toMap() => {
-        'numerator': numerator,
-        'denominator': denominator,
-      };
+  Map<String, dynamic> toMap() =>
+      {'numerator': numerator, 'denominator': denominator};
 }
 
-/// Extension for [Rational] to confirm whether Android aspect ration
-/// requirements are met or not.
 extension on Rational {
-  /// Checks whether given [Rational] instance fits into Android requirements
-  /// or not.
-  ///
-  /// Android docs specified boundaries as inclusive.
   bool get fitsInAndroidRequirements {
     final aspectRatio = numerator / denominator;
     const min = 1 / 2.39;
@@ -179,8 +185,6 @@ extension on Rational {
   }
 }
 
-/// Provides details about Android requirements and compares current
-/// [rational] value to those.
 class RationalNotMatchingAndroidRequirementsException implements Exception {
   final Rational rational;
 
@@ -193,3 +197,16 @@ class RationalNotMatchingAndroidRequirementsException implements Exception {
       'min: 1/2.39, max: 2.39/1. '
       ')';
 }
+
+extension ExtensionRect on Rect {
+  Map<String, double> toLTWH() => {
+        'left': left,
+        'top': top,
+        'width': width,
+        'height': height,
+        'right': right,
+        'bottom': bottom
+      };
+}
+
+bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;

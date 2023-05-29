@@ -1,10 +1,10 @@
 import Cocoa
 import FlutterMacOS
 
-public class FlPipPlugin: NSObject, FlutterPlugin {
+public class FlPiPPlugin: NSObject, FlutterPlugin {
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(name: "fl_pip", binaryMessenger: registrar.messenger)
-    let instance = FlPipPlugin()
+    let instance = FlPiPPlugin()
     registrar.addMethodCallDelegate(instance, channel: channel)
   }
 

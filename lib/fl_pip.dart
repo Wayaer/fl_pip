@@ -57,7 +57,6 @@ class FlPiP {
         case "onPiPStatus":
           final state = call.arguments as int;
           status.value = PiPStatus.values[state];
-          print('onPiPStatus : ${status.value}');
       }
     });
   }

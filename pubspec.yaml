@@ -1,6 +1,7 @@
 name: fl_pip
 description: A new Flutter project.
 version: 0.0.1
+repository: https://github.com/Wayaer/fl_pip.git
 
 environment:
   sdk: '>=2.18.0 <4.0.0'
@@ -21,5 +22,5 @@ flutter:
         pluginClass: FlPiPPlugin
       ios:
         pluginClass: FlPiPPlugin
-      macos:
-        pluginClass: FlPiPPlugin
+  assets:
+    - assets/

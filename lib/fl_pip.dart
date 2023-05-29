@@ -134,6 +134,8 @@ class FlPiPiOSConfig extends FlPiPConfig {
     required super.rect,
     this.path = 'assets/landscape.mp4',
     this.packageName = 'fl_pip',
+    this.enableControls = false,
+    this.enablePlayback = false,
   });
 
   ///  ios 需要的视频路径
@@ -143,8 +145,18 @@ class FlPiPiOSConfig extends FlPiPConfig {
   /// ios 配置视频地址的 packageName
   final String? packageName;
 
-  Map<String, dynamic> toMap() =>
-      {'packageName': packageName, 'path': path}..addAll(rect.toLTWH());
+  /// 开启播放控制
+  final bool enableControls;
+
+  /// 开启播放速度
+  final bool enablePlayback;
+
+  Map<String, dynamic> toMap() => {
+        'enableControls': enableControls,
+        'enablePlayback': enablePlayback,
+        'packageName': packageName,
+        'path': path
+      }..addAll(rect.toLTWH());
 }
 
 /// android pip 宽高比

@@ -17,7 +17,14 @@ class MainActivity : FlPiPActivity()
 ```xml
 
 <application android:label="FlPiP">
-    <activity android:name=".MainActivity" android:launchMode="singleTop" android:supportsPictureInPicture="true">
-
-    </activity>
+    <activity android:name=".MainActivity" android:launchMode="singleTop" android:supportsPictureInPicture="true" />
+</application>
 ```
+
+<video id="video" controls="" preload="none" poster="Android">
+      <source id="mp4" src="./example/assets/android.mp4" type="video/mp4">
+</video>
+
+<video id="video" controls="" preload="none" poster="iOS">
+      <source id="mp4" src="./example/assets/ios.mp4" type="video/mp4">
+</video>

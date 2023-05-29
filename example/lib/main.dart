@@ -2,7 +2,10 @@ import 'package:fl_pip/fl_pip.dart';
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(MaterialApp(theme: ThemeData.dark(), home: const MyApp()));
+  runApp(MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark(),
+      home: const MyApp()));
 }
 
 class MyApp extends StatefulWidget {

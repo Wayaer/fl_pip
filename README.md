@@ -8,11 +8,15 @@
 - android 配置 : `android/app/src/main/${your package name}/MainActivity` 修改 MainActivity 继承,
 - android configuration : `android/app/src/main/${your package name}/MainActivity`,
 
+### kotlin
+
 ```kotlin
 
 class MainActivity : FlPiPActivity()
 
 ```
+
+### java
 
 ```java
 

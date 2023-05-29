@@ -21,10 +21,13 @@ class MainActivity : FlPiPActivity()
 </application>
 ```
 
+```HTML
+
 <video id="video" controls="" preload="none" poster="Android">
-      <source id="mp4" src="./example/assets/android.mp4" type="video/mp4">
+    <source id="mp4" src="./example/assets/android.mp4" type="video/mp4">
 </video>
 
 <video id="video" controls="" preload="none" poster="iOS">
-      <source id="mp4" src="./example/assets/ios.mp4" type="video/mp4">
+    <source id="mp4" src="./example/assets/ios.mp4" type="video/mp4">
 </video>
+```

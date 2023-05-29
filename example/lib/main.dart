@@ -36,11 +36,9 @@ class _MyAppState extends State<MyApp> {
       floatingActionButton: FloatingActionButton.extended(
           onPressed: () {
             FlPiP().enable(
-                iosConfig:
-                    FlPiPiOSConfig(rect: const Rect.fromLTWH(0, 0, 1, 1)),
+                iosConfig: FlPiPiOSConfig(),
                 androidConfig: FlPiPAndroidConfig(
-                    aspectRatio: const Rational.square(),
-                    rect: const Rect.fromLTWH(10, 10, 200, 200)));
+                    aspectRatio: const Rational.maxLandscape()));
           },
           label: const Text('Enable PiP'),
           icon: const Icon(Icons.picture_in_picture)),

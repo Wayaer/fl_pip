@@ -107,30 +107,20 @@ enum AppLifecycleState {
   background,
 }
 
-abstract class FlPiPConfig {
-  FlPiPConfig({required this.rect});
-
-  ///  ios 悬浮框弹出前视频的初始大小
-  ///  android 窗口大小
-  final Rect rect;
-}
-
 /// android 配置信息
-class FlPiPAndroidConfig extends FlPiPConfig {
+class FlPiPAndroidConfig {
   FlPiPAndroidConfig({
-    required super.rect,
     this.aspectRatio = const Rational.square(),
   });
 
   final Rational aspectRatio;
 
-  Map<String, dynamic> toMap() => aspectRatio.toMap()..addAll(rect.toLTWH());
+  Map<String, dynamic> toMap() => aspectRatio.toMap();
 }
 
 /// ios 配置信息
-class FlPiPiOSConfig extends FlPiPConfig {
+class FlPiPiOSConfig {
   FlPiPiOSConfig({
-    required super.rect,
     this.path = 'assets/landscape.mp4',
     this.packageName = 'fl_pip',
     this.enableControls = false,
@@ -155,7 +145,7 @@ class FlPiPiOSConfig extends FlPiPConfig {
         'enablePlayback': enablePlayback,
         'packageName': packageName,
         'path': path
-      }..addAll(rect.toLTWH());
+      };
 }
 
 /// android pip 宽高比
@@ -165,7 +155,7 @@ class Rational {
 
   double get aspectRatio => numerator / denominator;
 
-  const Rational({required this.numerator, required this.denominator});
+  const Rational(this.numerator, this.denominator);
 
   const Rational.square()
       : numerator = 1,
@@ -174,6 +164,14 @@ class Rational {
   const Rational.landscape()
       : numerator = 16,
         denominator = 9;
+
+  const Rational.maxLandscape()
+      : numerator = 239,
+        denominator = 100;
+
+  const Rational.maxVertical()
+      : numerator = 100,
+        denominator = 239;
 
   const Rational.vertical()
       : numerator = 9,

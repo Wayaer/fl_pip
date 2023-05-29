@@ -1,15 +1,23 @@
 # fl_pip
 
-A new Flutter project.
+- ios configuration
+  `Signing & Capabilities` -> `Capability` Add `BackgroundModes` check `Audio,AirPlay,And Picture in Picture`
 
-## Getting Started
+- android configuration
+  `android/app/src/main/${your package name}/MainActivity`,
 
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.dev/developing-packages/),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
+```kotlin
 
-For help getting started with Flutter development, view the
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+class MainActivity : FlPiPActivity()
 
+```
+
+`android/app/src/main/AndroidManifest.xml`, add ` android:supportsPictureInPicture="true"`
+
+```xml
+
+<application android:label="FlPiP">
+    <activity android:name=".MainActivity" android:launchMode="singleTop" android:supportsPictureInPicture="true">
+
+    </activity>
+```

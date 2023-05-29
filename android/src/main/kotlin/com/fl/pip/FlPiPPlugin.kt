@@ -46,14 +46,10 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 val args = call.arguments as Map<*, *>
                 val builder = PictureInPictureParams.Builder().apply {
                     setAspectRatio(Rational(args["numerator"] as Int, args["denominator"] as Int))
-                    setSourceRectHint(
-                        Rect(
-                            (args["left"] as Double).toInt(),
-                            (args["top"] as Double).toInt(),
-                            (args["right"] as Double).toInt(),
-                            (args["bottom"] as Double).toInt()
-                        )
-                    )
+                    setSourceRectHint(Rect(0, 0, 0, 0))
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        setSeamlessResizeEnabled(false)
+                    }
                 }
                 result.success(if (activity.enterPictureInPictureMode(builder.build())) 0 else 1)
             }
@@ -88,6 +84,10 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
     }
 
+    private fun dp2px(value: Int): Int {
+        val scale: Float = context.resources.displayMetrics.density
+        return (value * scale + 0.5f).toInt()
+    }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)

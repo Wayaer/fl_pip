@@ -88,7 +88,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
                 return 1
             }
             playerLayer = AVPlayerLayer()
-            playerLayer!.frame = .init(x: args["left"] as! Double, y: args["top"] as! Double, width: args["width"] as! Double, height: args["height"] as! Double)
+            playerLayer!.frame = .init(x: 0, y: 0, width: 1, height: 1)
             player = AVPlayer(playerItem: AVPlayerItem(asset: AVURLAsset(url: URL(fileURLWithPath: bundlePath!))))
             playerLayer!.player = player
             player!.isMuted = true

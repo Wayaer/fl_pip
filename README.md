@@ -1,5 +1,8 @@
 # fl_pip
 
+## 基于原生ios和android的画中画模式，实现显示flutter的view,可以通过修改flutter 栈顶的view来显示任意UI
+## The picture-in-picture mode is implemented in native ios and android to display flutter's view
+
 ## Use configuration
 
 - ios 配置 : `Signing & Capabilities` -> `Capability` 添加 `BackgroundModes` 勾选 `Audio,AirPlay,And Picture in Picture`

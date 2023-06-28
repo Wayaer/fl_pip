@@ -1,6 +1,7 @@
 # fl_pip
 
 ## 基于原生ios和android的画中画模式，实现显示flutter的view,可以通过修改flutter 栈顶的view来显示任意UI
+
 ## The picture-in-picture mode is implemented in native ios and android to display flutter's view
 
 ## Use configuration
@@ -73,6 +74,6 @@ void toggle() {
 
 ## Display effect
 
-| android | ios                                                                                       |
-| --- |-------------------------------------------------------------------------------------------|
-| <img src="https://github.com/Wayaer/fl_pip/raw/main/example/assets/android.gif" width="100%"/> | <img src="https://github.com/Wayaer/fl_pip/raw/main/example/assets/ios.gif" width="75%"/> |
+| android                                                                           | ios                                                                           |
+|-----------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| <img src="https://github.com/Wayaer/fl_pip/raw/main/example/assets/android.gif"/> | <img src="https://github.com/Wayaer/fl_pip/raw/main/example/assets/ios.gif"/> |

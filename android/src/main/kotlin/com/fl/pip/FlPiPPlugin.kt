@@ -11,6 +11,7 @@ import android.graphics.Rect
 import android.os.Build
 import android.util.Rational
 import androidx.annotation.RequiresApi
+import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -51,7 +52,12 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                         setSeamlessResizeEnabled(false)
                     }
                 }
-                result.success(if (activity.enterPictureInPictureMode(builder.build())) 0 else 1)
+                val mainName = args["mainName"] as String?
+                if (mainName != null) {
+
+                } else {
+                    result.success(if (activity.enterPictureInPictureMode(builder.build())) 0 else 1)
+                }
             }
 
             "isActive" -> {

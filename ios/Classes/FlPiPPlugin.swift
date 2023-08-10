@@ -9,8 +9,14 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     private var player: AVPlayer?
     private var pipController: AVPictureInPictureController?
 
-    private var flutterView: UIView?
-    private var flutterWindow: UIWindow?
+    private let engineGroup = FlutterEngineGroup(name: "pip.flutter", project: nil)
+    private var flutterController: FlutterViewController?
+    private var mainName: String?
+    private var whenStopDestroyEngine: Bool = true
+    private var withEngine: Bool = false
+
+    private var rootWindow: UIWindow?
+    private var rootController: UIViewController?
 
     private var channel: FlutterMethodChannel
 
@@ -30,6 +36,9 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         switch call.method {
         case "enable":
             result(enable(call.arguments as! [String: Any?]))
+        case "disable":
+            dispose()
+            result(true)
         case "isActive":
             if isAvailable() {
                 if pipController?.isPictureInPictureActive ?? false {
@@ -53,7 +62,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
             }
             result(nil)
         case "available":
-            flutterView = flutterWindow?.rootViewController?.view
+            rootController = rootWindow?.rootViewController
             result(isAvailable())
         default:
             result(nil)
@@ -68,25 +77,30 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
             print("FlPiP error : AVAudioSession.sharedInstance()")
             return 1
         }
-        dispose()
         let path = args["path"] as! String
-        let packageName = args["packageName"] as! String
+        dispose()
+        let packageName = args["packageName"] as? String
         let assetPath: String
-        assetPath = registrar.lookupKey(forAsset: path, fromPackage: packageName)
+        if packageName != nil {
+            assetPath = registrar.lookupKey(forAsset: path, fromPackage: packageName!)
+        } else {
+            assetPath = registrar.lookupKey(forAsset: path)
+        }
         let bundlePath = Bundle.main.path(forResource: assetPath, ofType: nil)
         if bundlePath == nil {
-            print("FlPiP error : Unable to load video resources, \(path) in \(packageName)")
+            print("FlPiP error : Unable to load video resources, \(path) in \(packageName ?? "current")")
             return 1
         }
         if isAvailable() {
-            flutterWindow = windows()?.filter { window in
+            rootWindow = windows()?.filter { window in
                 window.isKeyWindow
             }.first
-            flutterView = flutterWindow?.rootViewController?.view
-            if flutterWindow == nil || flutterView == nil {
-                print("FlPiP error : (flutterWindow || flutterView ） is null")
+            rootController = rootWindow?.rootViewController
+            if rootWindow == nil || rootController == nil {
+                print("FlPiP error : rootWindow || rootController  is null")
                 return 1
             }
+            createFlutterEngine(args)
             playerLayer = AVPlayerLayer()
             playerLayer!.frame = .init(x: 0, y: 0, width: 1, height: 1)
             player = AVPlayer(playerItem: AVPlayerItem(asset: AVURLAsset(url: URL(fileURLWithPath: bundlePath!))))
@@ -107,13 +121,31 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
                 pipController!.canStartPictureInPictureAutomaticallyFromInline = true
             } else {}
             player!.play()
-            flutterView?.layer.addSublayer(playerLayer!)
+            rootController?.view?.layer.addSublayer(playerLayer!)
             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.4) {
                 self.pipController!.startPictureInPicture()
             }
-            return pipController!.isPictureInPictureActive ? 0 : 1
+            return 0
         }
         return 2
+    }
+
+    func createFlutterEngine(_ args: [String: Any?]) {
+        let name = args["mainName"] as? String
+        withEngine = name != nil
+        if mainName != name {
+            disposeEngine()
+            mainName = name
+        }
+        whenStopDestroyEngine = args["whenStopDestroyEngine"] as? Bool ?? true
+        if mainName != nil, flutterController == nil {
+            let engine = engineGroup.makeEngine(withEntrypoint: mainName, libraryURI: nil)
+            flutterController = FlutterViewController(
+                engine: engine,
+                nibName: nil,
+                bundle: nil)
+            engine.run(withEntrypoint: mainName)
+        }
     }
 
     public func background() {
@@ -133,29 +165,71 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         player = nil
     }
 
+    public func disposeEngine() {
+        if whenStopDestroyEngine {
+            flutterController?.engine?.destroyContext()
+            flutterController?.dismiss(animated: true)
+            flutterController = nil
+            mainName = nil
+        }
+    }
+
     public func isAvailable() -> Bool {
         AVPictureInPictureController.isPictureInPictureSupported()
     }
 
     public func pictureInPictureControllerDidStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-        if let window = UIApplication.shared.windows.first {
-            if flutterView != nil {
-                flutterView?.frame = window.rootViewController?.view.frame ?? CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.height)
-                window.addSubview(flutterView!)
-                background()
-                channel.invokeMethod("onPiPStatus", arguments: 0)
+        if let firstWindow = UIApplication.shared.windows.first, rootWindow != nil {
+            if withEngine {
+                firstWindow.rootViewController?.present(flutterController!, animated: true)
+            } else if rootController != nil {
+                rootController!.view.frame = firstWindow.rootViewController?.view.frame ?? CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.height)
+                rootController!.view.removeFromSuperview()
+                print(firstWindow.rootViewController)
+                firstWindow.rootViewController = rootController
+                print(rootWindow?.rootViewController)
+//                rootWindow?.rootViewController = nil
+//                print(rootWindow?.rootViewController)
+//                background()
             }
+            channel.invokeMethod("onPiPStatus", arguments: 0)
         }
     }
 
     public func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-        if flutterView != nil {
+        if rootController != nil, !withEngine {
             let rect = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.height)
-            flutterView!.frame = rect
-            flutterWindow?.addSubview(flutterView!)
-            channel.invokeMethod("onPiPStatus", arguments: 1)
+            rootController!.view.frame = rect
+            let firstWindow = UIApplication.shared.windows.first
+            print(rootWindow!.rootViewController)
+            print(firstWindow!.rootViewController)
+            let controller = firstWindow?.rootViewController ?? rootController
+            controller?.view.frame = rect
+            rootWindow!.rootViewController = controller
+            firstWindow?.rootViewController = nil
+            print(rootWindow!.rootViewController)
+            print(firstWindow!.rootViewController)
+//            firstWindow?.rootViewController = nil
+//            rootController!.view.removeFromSuperview()
+
+//            rootWindow!.rootViewController?.view = rootView!.view
+//            rootWindow!.rootViewController?.present(rootController!, animated: true)
+//            print(rootWindow!.rootViewController?.view)
+//            print(rootWindow!.rootViewController)
+            ////            print(rootWindow!.addSubview())
+//            rootWindow!.addSubview(rootView!.view)
+//            print(rootWindow!.rootViewController?.view)
+//            print(rootWindow!.rootViewController)
+//            rootWindow!.rootViewController?.view.addSubview()
+//            if let firstWindow = UIApplication.shared.windows.first { firstWindow.rootViewController?.dismiss(animated: true)
+//            }
         }
+
+        channel.invokeMethod("onPiPStatus", arguments: 1)
         dispose()
+        if withEngine {
+            disposeEngine()
+        }
     }
 
     public func windows() -> [UIWindow]? {

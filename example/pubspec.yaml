@@ -12,9 +12,12 @@ dependencies:
   fl_pip:
     path: ../
   cupertino_icons: ^1.0.2
+  flutter_waya: ^8.0.3
 
 dev_dependencies:
   flutter_lints: ^2.0.1
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/

@@ -77,17 +77,36 @@ class FlPiP {
   final ValueNotifier<PiPStatus> status = ValueNotifier(PiPStatus.unavailable);
 
   /// 开启画中画
-  /// Open picture-in-picture
+  /// enable picture-in-picture
   Future<PiPStatus> enable({
-    required FlPiPAndroidConfig androidConfig,
-    required FlPiPiOSConfig iosConfig,
+    FlPiPAndroidConfig android = const FlPiPAndroidConfig(),
+    FlPiPiOSConfig ios = const FlPiPiOSConfig(),
   }) async {
-    if (_isAndroid && !(androidConfig.aspectRatio.fitsInAndroidRequirements)) {
+    if (!(_isAndroid || _isIos)) {
+      return PiPStatus.unavailable;
+    }
+    if (_isAndroid && !(android.aspectRatio.fitsInAndroidRequirements)) {
       throw RationalNotMatchingAndroidRequirementsException(
-          androidConfig.aspectRatio);
+          android.aspectRatio);
     }
     final int? state = await _channel.invokeMethod<int>(
-        'enable', _isAndroid ? androidConfig.toMap() : iosConfig.toMap());
+        'enable', _isAndroid ? android.toMap() : ios.toMap());
+    status.value = PiPStatus.values[state ?? 2];
+    return status.value;
+  }
+
+  /// 开启画中画 创建新的 engine
+  /// enable picture-in-picture use Engine
+  Future<PiPStatus> enableWithEngine({
+    required FlPiPEngineConfig engine,
+    FlPiPAndroidConfig android = const FlPiPAndroidConfig(),
+    FlPiPiOSConfig ios = const FlPiPiOSConfig(),
+  }) async {
+    if (!(_isAndroid || _isIos)) {
+      return PiPStatus.unavailable;
+    }
+    final int? state = await _channel.invokeMethod<int>('enable',
+        {..._isAndroid ? android.toMap() : ios.toMap(), ...engine.toMap()});
     status.value = PiPStatus.values[state ?? 2];
     return status.value;
   }
@@ -123,22 +142,50 @@ enum AppState {
   background,
 }
 
+class FlPiPEngineConfig {
+  FlPiPEngineConfig({this.mainName, this.whenStopDestroyEngine = true});
+
+  /// mainName 是main 启动方法名,如果使用了这个参数，会自动创建新的engine，并支持手势操作
+  /// mainName is the name of the main boot method,If this parameter is used, a new engine is automatically created and supports gesture operations
+  /// 当创建新的engine时 在ios上仍然使用native 的 画中画模式，在android上使用的全局弹窗，所以 android 需要申请悬浮窗权限
+  /// When creating a new engine, it still uses native's picture-in-picture mode on ios and the global popup mode on android, so android needs to apply for suspension window permissions
+  final String? mainName;
+
+  /// 当画中画退出时 关闭 engine
+  /// Destroy engine when picture-in-picture exits
+  final bool whenStopDestroyEngine;
+
+  Map<String, dynamic> toMap() =>
+      {'mainName': mainName, 'whenStopDestroyEngine': whenStopDestroyEngine};
+}
+
 /// android 画中画配置
 /// android picture-in-picture configuration
 class FlPiPAndroidConfig {
-  FlPiPAndroidConfig({
+  const FlPiPAndroidConfig({
     this.aspectRatio = const Rational.square(),
+    this.size = const Size(400, 600),
   });
 
+  /// android 画中画窗口宽高比例
+  /// android picture in picture window width-height ratio
   final Rational aspectRatio;
 
-  Map<String, dynamic> toMap() => aspectRatio.toMap();
+  /// 当使用mainName 的时候窗口的宽高
+  /// The width and height of the window when mainName is used
+  final Size size;
+
+  Map<String, dynamic> toMap() => {
+        ...aspectRatio.toMap(),
+        'width': size.width,
+        'height': size.height,
+      };
 }
 
 /// ios 画中画配置
 /// ios picture-in-picture configuration
 class FlPiPiOSConfig {
-  FlPiPiOSConfig({
+  const FlPiPiOSConfig({
     this.path = 'assets/landscape.mp4',
     this.packageName = 'fl_pip',
     this.enableControls = false,
@@ -146,11 +193,13 @@ class FlPiPiOSConfig {
   });
 
   /// 视频路径 用于修修改画中画尺寸
-  /// The video path is used to modify the size of the picture in picture
+  /// The video [path] is used to modify the size of the picture in picture
   final String path;
 
   /// 配置视频地址的 packageName
   /// Set packageName to the video address
+  /// 如果使用你自己项目的资源文件 请设置[packageName]为null
+  /// If using your own project's resource files, set [packageName] to null
   final String? packageName;
 
   /// 显示播放控制
@@ -230,3 +279,5 @@ class RationalNotMatchingAndroidRequirementsException implements Exception {
 }
 
 bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
+
+bool get _isIos => defaultTargetPlatform == TargetPlatform.iOS;

@@ -60,6 +60,8 @@ enum PiPStatus {
 class FlPiP {
   factory FlPiP() => _singleton ??= FlPiP._();
 
+  static FlPiP? _singleton;
+
   FlPiP._() {
     _channel.setMethodCallHandler((call) async {
       switch (call.method) {
@@ -69,8 +71,6 @@ class FlPiP {
       }
     });
   }
-
-  static FlPiP? _singleton;
 
   final _channel = const MethodChannel('fl_pip');
 

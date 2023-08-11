@@ -13,29 +13,41 @@ class MainApp extends StatefulWidget {
 class _MainAppState extends State<MainApp> {
   @override
   Widget build(BuildContext context) => Scaffold(
-      body: Center(
-          child: PiPBuilder(
-              pip: FlPiP(),
-              builder: (PiPStatus status) {
-                switch (status) {
-                  case PiPStatus.enabled:
-                    return Column(mainAxisSize: MainAxisSize.min, children: [
-                      CountDown(
-                          onChanged: (int i) {},
-                          periodic: 1,
-                          duration: const Duration(seconds: 500),
-                          builder: (int i) => Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 6, horizontal: 12),
-                              child: Text(i.toString()))),
-                      const Text('PiPStatus enabled'),
-                    ]);
-                  case PiPStatus.disabled:
-                    return builderDisabled;
-                  case PiPStatus.unavailable:
-                    return buildUnavailable;
-                }
-              })));
+          body: Center(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+        CountDown(
+            onChanged: (int i) {},
+            periodic: 1,
+            duration: const Duration(seconds: 500),
+            builder: (int i) => Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                child: Text(i.toString()))),
+        const SizedBox(height: 10),
+        PiPBuilder(
+            pip: FlPiP(),
+            builder: (PiPStatus status) {
+              switch (status) {
+                case PiPStatus.enabled:
+                  return const Text('PiPStatus enabled');
+                case PiPStatus.disabled:
+                  return builderDisabled;
+                case PiPStatus.unavailable:
+                  return buildUnavailable;
+              }
+            }),
+        ElevatedButton(
+            onPressed: () async {
+              final state = await FlPiP().isAvailable;
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: state
+                        ? const Text('PiP available')
+                        : const Text('PiP unavailable')));
+              }
+            },
+            child: const Text('PiPStatus isAvailable')),
+      ])));
 
   Widget get builderDisabled =>
       Column(mainAxisSize: MainAxisSize.min, children: [
@@ -52,11 +64,15 @@ class _MainAppState extends State<MainApp> {
             child: const Text('Enable PiP')),
         ElevatedButton(
             onPressed: () {
-              FlPiP().enableWithEngine(
-                  engine: FlPiPEngineConfig(
-                      mainName: 'pipMain', whenStopDestroyEngine: false));
+              FlPiP().enableWithEngine(engine: FlPiPEngineConfig());
             },
             child: const Text('Enable PiP with Engine')),
+        ElevatedButton(
+            onPressed: () {
+              FlPiP().enableWithEngine(
+                  engine: FlPiPEngineConfig(whenStopDestroyEngine: false));
+            },
+            child: const Text('Enable PiP with Engine (false)')),
       ]);
 
   Widget get buildUnavailable => ElevatedButton(
@@ -97,6 +113,6 @@ class PiPMainApp extends StatelessWidget {
                         : const Text('PiP unavailable')));
               }
             },
-            child: const Text('PiPStatus enabled')),
+            child: const Text('PiPStatus isAvailable')),
       ])));
 }

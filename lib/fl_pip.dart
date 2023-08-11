@@ -143,20 +143,14 @@ enum AppState {
 }
 
 class FlPiPEngineConfig {
-  FlPiPEngineConfig({this.mainName, this.whenStopDestroyEngine = true});
-
-  /// mainName 是main 启动方法名,如果使用了这个参数，会自动创建新的engine，并支持手势操作
-  /// mainName is the name of the main boot method,If this parameter is used, a new engine is automatically created and supports gesture operations
-  /// 当创建新的engine时 在ios上仍然使用native 的 画中画模式，在android上使用的全局弹窗，所以 android 需要申请悬浮窗权限
-  /// When creating a new engine, it still uses native's picture-in-picture mode on ios and the global popup mode on android, so android needs to apply for suspension window permissions
-  final String? mainName;
+  FlPiPEngineConfig({this.whenStopDestroyEngine = true});
 
   /// 当画中画退出时 关闭 engine
   /// Destroy engine when picture-in-picture exits
   final bool whenStopDestroyEngine;
 
   Map<String, dynamic> toMap() =>
-      {'mainName': mainName, 'whenStopDestroyEngine': whenStopDestroyEngine};
+      {'whenStopDestroyEngine': whenStopDestroyEngine};
 }
 
 /// android 画中画配置

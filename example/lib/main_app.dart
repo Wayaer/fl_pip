@@ -23,7 +23,8 @@ class _MainAppState extends State<MainApp> {
                 padding:
                     const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
                 child: Text(i.toString()))),
-        const SizedBox(height: 10),
+        const Image(
+            image: AssetImage('assets/logo.png'), width: 30, height: 30),
         PiPBuilder(
             pip: FlPiP(),
             builder: (PiPStatus status) {
@@ -64,15 +65,9 @@ class _MainAppState extends State<MainApp> {
             child: const Text('Enable PiP')),
         ElevatedButton(
             onPressed: () {
-              FlPiP().enableWithEngine(engine: FlPiPEngineConfig());
+              FlPiP().enableWithEngine();
             },
             child: const Text('Enable PiP with Engine')),
-        ElevatedButton(
-            onPressed: () {
-              FlPiP().enableWithEngine(
-                  engine: FlPiPEngineConfig(whenStopDestroyEngine: false));
-            },
-            child: const Text('Enable PiP with Engine (false)')),
       ]);
 
   Widget get buildUnavailable => ElevatedButton(
@@ -103,6 +98,8 @@ class PiPMainApp extends StatelessWidget {
                     const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
                 child: Text(i.toString()))),
         const Text('pip is currently enabled using mainName'),
+        const Image(
+            image: AssetImage('assets/logo.png'), width: 30, height: 30),
         ElevatedButton(
             onPressed: () async {
               final state = await FlPiP().isAvailable;

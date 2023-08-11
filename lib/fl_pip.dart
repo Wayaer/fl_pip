@@ -98,16 +98,23 @@ class FlPiP {
   /// 开启画中画 创建新的 engine
   /// enable picture-in-picture use Engine
   Future<PiPStatus> enableWithEngine({
-    required FlPiPEngineConfig engine,
     FlPiPAndroidConfig android = const FlPiPAndroidConfig(),
     FlPiPiOSConfig ios = const FlPiPiOSConfig(),
   }) async {
     if (!(_isAndroid || _isIos)) {
       return PiPStatus.unavailable;
     }
-    final int? state = await _channel.invokeMethod<int>('enable',
-        {..._isAndroid ? android.toMap() : ios.toMap(), ...engine.toMap()});
+    final int? state = await _channel.invokeMethod<int>(
+        'enableWithEngine', {..._isAndroid ? android.toMap() : ios.toMap()});
     status.value = PiPStatus.values[state ?? 2];
+    return status.value;
+  }
+
+  /// 关闭画中画
+  /// disable picture-in-picture
+  Future<PiPStatus> disable() async {
+    final int? state = await _channel.invokeMethod<int>('disable');
+    status.value = PiPStatus.values[state ?? 1];
     return status.value;
   }
 
@@ -140,17 +147,6 @@ enum AppState {
 
   /// 后台
   background,
-}
-
-class FlPiPEngineConfig {
-  FlPiPEngineConfig({this.whenStopDestroyEngine = true});
-
-  /// 当画中画退出时 关闭 engine
-  /// Destroy engine when picture-in-picture exits
-  final bool whenStopDestroyEngine;
-
-  Map<String, dynamic> toMap() =>
-      {'whenStopDestroyEngine': whenStopDestroyEngine};
 }
 
 /// android 画中画配置

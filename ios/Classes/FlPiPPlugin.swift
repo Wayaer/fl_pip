@@ -10,9 +10,9 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     private var pipController: AVPictureInPictureController?
 
     private var engineGroup: FlutterEngineGroup?
+    private var flutterEngine: FlutterEngine?
     private var flutterController: FlutterViewController?
 
-    private var whenStopDestroyEngine: Bool = true
     private var withEngine: Bool = false
 
     private var rootWindow: UIWindow?
@@ -35,9 +35,13 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         switch call.method {
         case "enable":
             result(enable(call.arguments as! [String: Any?]))
+        case "enableWithEngine":
+            withEngine = true
+            result(enable(call.arguments as! [String: Any?]))
         case "disable":
             dispose()
-            result(true)
+            disposeEngine()
+            result(1)
         case "isActive":
             if isAvailable() {
                 if pipController?.isPictureInPictureActive ?? false {
@@ -99,7 +103,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
             }
             createFlutterEngine(args)
             playerLayer = AVPlayerLayer()
-            playerLayer!.frame = .init(x: 0, y: 0, width: 1, height: 1)
+            playerLayer!.frame = .init(x: UIScreen.main.bounds.size.width/2, y: UIScreen.main.bounds.size.height/2, width: 10, height: 10)
             player = AVPlayer(playerItem: AVPlayerItem(asset: AVURLAsset(url: URL(fileURLWithPath: bundlePath!))))
             playerLayer!.player = player
             player!.isMuted = true
@@ -128,22 +132,16 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     }
 
     func createFlutterEngine(_ args: [String: Any?]) {
-        let destroyEngine = args["whenStopDestroyEngine"] as? Bool
-        withEngine = destroyEngine != nil
+        disposeEngine()
         if withEngine {
-            whenStopDestroyEngine = destroyEngine!
-//            if flutterController == nil {
             engineGroup = FlutterEngineGroup(name: "pip.flutter", project: nil)
             let rootController = (rootWindow?.rootViewController as! FlutterViewController)
-//            print(rootController.engine)
-//            GeneratedPluginRegistrant.register(with: engine)
-            let engine = engineGroup!.makeEngine(withEntrypoint: "pipMain", libraryURI: nil)
+            flutterEngine = engineGroup!.makeEngine(withEntrypoint: "pipMain", libraryURI: nil)
             flutterController = FlutterViewController(
-                engine: engine,
+                engine: flutterEngine!,
                 nibName: rootController.nibName,
                 bundle: rootController.nibBundle)
-            engine.run(withEntrypoint: "pipMain")
-//            }
+            flutterEngine!.run(withEntrypoint: "pipMain")
         }
     }
 
@@ -165,12 +163,12 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     }
 
     public func disposeEngine() {
-//        if whenStopDestroyEngine {
         flutterController?.removeFromParent()
         flutterController?.engine?.destroyContext()
+        flutterEngine?.viewController?.dismiss(animated: false)
+        flutterEngine = nil
         engineGroup = nil
         flutterController = nil
-//        }
     }
 
     public func isAvailable() -> Bool {
@@ -180,7 +178,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     public func pictureInPictureControllerDidStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
         if let firstWindow = UIApplication.shared.windows.first, rootWindow != nil {
             let rect = firstWindow.rootViewController?.view.frame ?? CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.height)
-            if withEngine {
+            if withEngine, flutterController != nil {
                 flutterController!.view.frame = rect
                 firstWindow.rootViewController = flutterController
             } else if rootWindow != nil {
@@ -192,7 +190,6 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
                 flController.dismiss(animated: true)
                 newController.view.frame = rect
                 firstWindow.rootViewController = newController
-//                background()
             }
             channel.invokeMethod("onPiPStatus", arguments: 0)
         }
@@ -211,6 +208,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
             engine.viewController = nil
             let newController = FlutterViewController(engine: flController.engine!, nibName: flController.nibName, bundle: flController.nibBundle)
             flController.dismiss(animated: true)
+            firstWindow!.rootViewController = nil
             newController.view.frame = rect
             rootWindow?.rootViewController = newController
         }

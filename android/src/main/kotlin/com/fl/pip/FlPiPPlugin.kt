@@ -52,12 +52,15 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                         setSeamlessResizeEnabled(false)
                     }
                 }
-                val mainName = args["mainName"] as String?
-                if (mainName != null) {
+                result.success(if (activity.enterPictureInPictureMode(builder.build())) 0 else 1)
+            }
 
-                } else {
-                    result.success(if (activity.enterPictureInPictureMode(builder.build())) 0 else 1)
-                }
+            "enableWithEngine" -> {
+
+            }
+            "disable" -> {
+                foreground()
+                result.success(null)
             }
 
             "isActive" -> {
@@ -72,22 +75,29 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
             "available" -> result.success(activity.packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE))
             "toggle" -> {
-                val state = call.arguments as Boolean
-                if (state) {
-                    /// 切换前台
-                    val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-                    am.moveTaskToFront(activity.taskId, ActivityManager.MOVE_TASK_WITH_HOME)
+                if (call.arguments as Boolean) {
+                    foreground()
                 } else {
-                    /// 切换后台
-                    val intent = Intent(Intent.ACTION_MAIN)
-                    intent.addCategory(Intent.CATEGORY_HOME)
-                    activity.startActivity(intent)
+                    background()
                 }
                 result.success(null)
             }
 
             else -> result.notImplemented()
         }
+    }
+
+    private fun background() {
+        /// 切换后台
+        val intent = Intent(Intent.ACTION_MAIN)
+        intent.addCategory(Intent.CATEGORY_HOME)
+        activity.startActivity(intent)
+    }
+
+    private fun foreground() {
+        /// 切换前台
+        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        am.moveTaskToFront(activity.taskId, ActivityManager.MOVE_TASK_WITH_HOME)
     }
 
     private fun dp2px(value: Int): Int {

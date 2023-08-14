@@ -4,14 +4,25 @@ package com.fl.pip
 import android.app.Activity
 import android.app.ActivityManager
 import android.app.PictureInPictureParams
+import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Rect
 import android.os.Build
+import android.util.Log
 import android.util.Rational
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.annotation.RequiresApi
+import io.flutter.FlutterInjector
 import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterView
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.embedding.engine.FlutterEngineCache
+import io.flutter.embedding.engine.FlutterEngineGroup
+import io.flutter.embedding.engine.dart.DartExecutor
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -30,6 +41,10 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     private lateinit var context: Context
     private lateinit var activity: Activity
 
+    private var engineId = "pip.flutter"
+    private var engine: FlutterEngine? = null
+    private var flutterView: FlutterView? = null
+    private var container: FrameLayout? = null
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "fl_pip")
         channel.setMethodCallHandler(this)
@@ -55,11 +70,10 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 result.success(if (activity.enterPictureInPictureMode(builder.build())) 0 else 1)
             }
 
-            "enableWithEngine" -> {
-
-            }
+            "enableWithEngine" -> result.success(enableWithEngine())
             "disable" -> {
                 foreground()
+                destroyEngin()
                 result.success(null)
             }
 
@@ -87,6 +101,33 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
     }
 
+    private fun enableWithEngine(): Boolean {
+        if (engine == null) {
+            container = FrameLayout(context)
+            flutterView = FlutterView(context)
+            val engineGroup = FlutterEngineGroup(context)
+            val dartEntrypoint = DartExecutor.DartEntrypoint(
+                FlutterInjector.instance().flutterLoader().findAppBundlePath(), "pipMain"
+            )
+            engine = engineGroup.createAndRunEngine(context, dartEntrypoint)
+            FlutterEngineCache.getInstance().put(engineId, engine)
+
+            engine!!.platformViewsController.attach(
+                context, engine!!.renderer, engine!!.dartExecutor
+            )
+            flutterView!!.attachToFlutterEngine(engine!!)
+            val displayMetrics = context.resources.displayMetrics
+            val height = displayMetrics.heightPixels
+            container!!.addView(
+                flutterView!!, FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, (height * 0.3).toInt()
+                )
+            )
+            engine!!.lifecycleChannel.appIsResumed()
+        }
+        return true
+    }
+
     private fun background() {
         /// 切换后台
         val intent = Intent(Intent.ACTION_MAIN)
@@ -100,6 +141,17 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         am.moveTaskToFront(activity.taskId, ActivityManager.MOVE_TASK_WITH_HOME)
     }
 
+    private fun destroyEngin() {
+        container = null
+        flutterView?.detachFromFlutterEngine()
+        flutterView = null
+        engine?.let {
+            it.destroy()
+            FlutterEngineCache.getInstance().remove(engineId)
+        }
+        engine = null
+    }
+
     private fun dp2px(value: Int): Int {
         val scale: Float = context.resources.displayMetrics.density
         return (value * scale + 0.5f).toInt()
@@ -107,6 +159,7 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
+        destroyEngin()
     }
 
     override fun onDetachedFromActivity() {}

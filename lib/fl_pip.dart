@@ -149,38 +149,46 @@ enum AppState {
   background,
 }
 
+class FlPiPConfig {
+  const FlPiPConfig({this.rect});
+
+  ///  ios 画中画弹出前视频的初始大小和位置,默认 [left:width/2,top:height/2,width:0.1,height:0.1]
+  ///  ios The initial size and position of the video before the picture-in-picture pops up,default [left:width/2,top:height/2,width:0.1,height:0.1]
+  ///  android 系统弹窗的大小和位置 ,默认 [left:width/2,top:height/2,width:300,height:300]
+  ///  android The size and position of the system popup,default [left:width/2,top:height/2,width:300,height:300]
+  final Rect? rect;
+
+  Map<String, dynamic> toMap() => {
+        'left': rect?.left,
+        'top': rect?.top,
+        'width': rect?.width,
+        'height': rect?.height
+      };
+}
+
 /// android 画中画配置
 /// android picture-in-picture configuration
-class FlPiPAndroidConfig {
-  const FlPiPAndroidConfig({
-    this.aspectRatio = const Rational.square(),
-    this.size = const Size(400, 600),
-  });
+class FlPiPAndroidConfig extends FlPiPConfig {
+  const FlPiPAndroidConfig(
+      {this.aspectRatio = const Rational.square(), super.rect});
 
   /// android 画中画窗口宽高比例
   /// android picture in picture window width-height ratio
   final Rational aspectRatio;
 
-  /// 当使用mainName 的时候窗口的宽高
-  /// The width and height of the window when mainName is used
-  final Size size;
-
-  Map<String, dynamic> toMap() => {
-        ...aspectRatio.toMap(),
-        'width': size.width,
-        'height': size.height,
-      };
+  @override
+  Map<String, dynamic> toMap() => {...aspectRatio.toMap(), ...super.toMap()};
 }
 
 /// ios 画中画配置
 /// ios picture-in-picture configuration
-class FlPiPiOSConfig {
-  const FlPiPiOSConfig({
-    this.path = 'assets/landscape.mp4',
-    this.packageName = 'fl_pip',
-    this.enableControls = false,
-    this.enablePlayback = false,
-  });
+class FlPiPiOSConfig extends FlPiPConfig {
+  const FlPiPiOSConfig(
+      {this.path = 'assets/landscape.mp4',
+      this.packageName = 'fl_pip',
+      this.enableControls = false,
+      this.enablePlayback = false,
+      super.rect});
 
   /// 视频路径 用于修修改画中画尺寸
   /// The video [path] is used to modify the size of the picture in picture
@@ -200,7 +208,9 @@ class FlPiPiOSConfig {
   /// Turn on playback speed
   final bool enablePlayback;
 
+  @override
   Map<String, dynamic> toMap() => {
+        ...super.toMap(),
         'enableControls': enableControls,
         'enablePlayback': enablePlayback,
         'packageName': packageName,

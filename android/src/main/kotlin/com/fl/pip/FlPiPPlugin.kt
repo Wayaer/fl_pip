@@ -113,6 +113,13 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 result.success(null)
             }
 
+            "launchApp" -> {
+                val intent = Intent(context, activity.javaClass)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                activity.startActivity(intent)
+                result.success(true)
+            }
+
             else -> result.notImplemented()
         }
     }
@@ -163,7 +170,6 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             x = (map["left"] as Double?)?.toInt() ?: 50
             y = (map["top"] as Double?)?.toInt() ?: (displayMetrics.heightPixels / 2)
         }
-
         @Suppress("ClickableViewAccessibility") flutterView!!.setOnTouchListener(object :
             View.OnTouchListener {
             private var initialX: Int = 0
@@ -178,7 +184,6 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                         initialY = layoutParams.y
                         initialTouchX = event.rawX
                         initialTouchY = event.rawY
-                        return true
                     }
 
                     MotionEvent.ACTION_MOVE -> {
@@ -187,7 +192,6 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                         layoutParams.x = (initialX + dx).toInt()
                         layoutParams.y = (initialY + dy).toInt()
                         windowManager.updateViewLayout(flutterView, layoutParams)
-                        return true
                     }
                 }
                 return false
@@ -211,7 +215,6 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     }
 
     private fun destroyEngin() {
-//        container = null
         flutterView?.detachFromFlutterEngine()
         windowManager.removeView(flutterView)
         flutterView = null

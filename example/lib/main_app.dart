@@ -87,8 +87,9 @@ class PiPMainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-          body: Center(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
+      backgroundColor: context.theme.scaffoldBackgroundColor.withOpacity(0.6),
+      body: Center(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
         CountDown(
             onChanged: (int i) {},
             periodic: 1,

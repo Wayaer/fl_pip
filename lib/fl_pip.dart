@@ -170,14 +170,36 @@ class FlPiPConfig {
 /// android picture-in-picture configuration
 class FlPiPAndroidConfig extends FlPiPConfig {
   const FlPiPAndroidConfig(
-      {this.aspectRatio = const Rational.square(), super.rect});
+      {this.aspectRatio = const Rational.square(),
+      this.radius = 12,
+      this.backgroundColor = Colors.black54,
+      super.rect});
 
   /// android 画中画窗口宽高比例
   /// android picture in picture window width-height ratio
   final Rational aspectRatio;
 
+  /// android 悬浮框圆角半径,非画中画模式使用
+  /// android floating layer rounded radius，Non-picture-in-picture mode is used
+  final double radius;
+
+  /// android 悬浮框背景色,非画中画模式使用
+  /// android floating layer background color，Non-picture-in-picture mode is used
+  final Color backgroundColor;
+
   @override
-  Map<String, dynamic> toMap() => {...aspectRatio.toMap(), ...super.toMap()};
+  Map<String, dynamic> toMap() => {
+        ...aspectRatio.toMap(),
+        'radius': radius,
+        'backgroundColor': toHex(backgroundColor),
+        ...super.toMap()
+      };
+
+  String toHex(Color color) =>
+      '#${color.alpha.toRadixString(16).padLeft(2, '0')}'
+      '${color.red.toRadixString(16).padLeft(2, '0')}'
+      '${color.green.toRadixString(16).padLeft(2, '0')}'
+      '${color.blue.toRadixString(16).padLeft(2, '0')}';
 }
 
 /// ios 画中画配置

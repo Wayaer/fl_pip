@@ -8,7 +8,6 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Rect
@@ -21,13 +20,10 @@ import android.util.Rational
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
-import android.view.ViewGroup
+import android.view.Window
 import android.view.WindowManager
-import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.annotation.RequiresApi
-import androidx.core.view.ViewCompat
-import androidx.lifecycle.LifecycleService
 import io.flutter.FlutterInjector
 import io.flutter.embedding.android.FlutterSurfaceView
 import io.flutter.embedding.android.FlutterView
@@ -38,33 +34,36 @@ import io.flutter.embedding.engine.dart.DartExecutor
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
+import io.flutter.embedding.engine.plugins.util.GeneratedPluginRegister
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import kotlin.math.roundToInt
+
 
 /** FlPiPPlugin */
 class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     companion object {
         lateinit var channel: MethodChannel
+        lateinit var rootEngine: FlutterEngine
     }
 
     private lateinit var context: Context
     private lateinit var activity: Activity
+    private lateinit var pluginBinding: FlutterPlugin.FlutterPluginBinding
 
     private var engineId = "pip.flutter"
     private var engine: FlutterEngine? = null
     private var flutterView: FlutterView? = null
     private lateinit var windowManager: WindowManager
 
-    override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        channel = MethodChannel(flutterPluginBinding.binaryMessenger, "fl_pip")
+    override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        pluginBinding = binding
+        context = binding.applicationContext
+        channel = MethodChannel(binding.binaryMessenger, "fl_pip")
         channel.setMethodCallHandler(this)
-        context = flutterPluginBinding.applicationContext
         windowManager = context.getSystemService(Service.WINDOW_SERVICE) as WindowManager
-
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
@@ -124,6 +123,7 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     private fun enableWithEngine(map: Map<*, *>): Int {
         if (!checkPermission()) {
             Toast.makeText(context, "请开启悬浮窗权限", Toast.LENGTH_SHORT).show()
@@ -141,12 +141,12 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 setColor(Color.parseColor((map["backgroundColor"] as String)))
             }
             flutterView!!.background = backgroundDrawable
-
-            val engineGroup = FlutterEngineGroup(context)
             val dartEntrypoint = DartExecutor.DartEntrypoint(
                 FlutterInjector.instance().flutterLoader().findAppBundlePath(), "pipMain"
             )
+            val engineGroup = pluginBinding.engineGroup ?: FlutterEngineGroup(context)
             engine = engineGroup.createAndRunEngine(context, dartEntrypoint)
+            GeneratedPluginRegister.registerGeneratedPlugins(engine!!)
             FlutterEngineCache.getInstance().put(engineId, engine)
             flutterView!!.attachToFlutterEngine(engine!!)
             engine!!.platformViewsController.attach(
@@ -215,8 +215,10 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     }
 
     private fun destroyEngin() {
-        flutterView?.detachFromFlutterEngine()
-        windowManager.removeView(flutterView)
+        if (flutterView != null) {
+            flutterView!!.detachFromFlutterEngine()
+            windowManager.removeView(flutterView)
+        }
         flutterView = null
         engine?.let {
             it.destroy()

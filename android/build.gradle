@@ -47,6 +47,4 @@ android {
 
 
 }
-dependencies {
-    implementation 'androidx.lifecycle:lifecycle-service:2.6.1'
-}
+

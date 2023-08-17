@@ -1,6 +1,5 @@
 import 'package:fl_pip/fl_pip.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_waya/components/count_down.dart';
 import 'package:flutter_waya/flutter_waya.dart';
 
 class MainApp extends StatefulWidget {
@@ -61,11 +60,13 @@ class _MainAppState extends State<MainApp> {
                       path: 'assets/landscape.mp4', packageName: null),
                   android: const FlPiPAndroidConfig(
                       aspectRatio: Rational.maxLandscape()));
+              FlPiP().toggle(AppState.background);
             },
             child: const Text('Enable PiP')),
         ElevatedButton(
             onPressed: () {
               FlPiP().enableWithEngine();
+              FlPiP().toggle(AppState.background);
             },
             child: const Text('Enable PiP with Engine')),
       ]);
@@ -87,7 +88,7 @@ class PiPMainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-      backgroundColor: context.theme.scaffoldBackgroundColor.withOpacity(0.6),
+      backgroundColor: Colors.black54,
       body: Center(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
         CountDown(
@@ -98,19 +99,11 @@ class PiPMainApp extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
                 child: Text(i.toString()))),
-        const Text('pip is currently enabled using mainName'),
-        const Image(
-            image: AssetImage('assets/logo.png'), width: 30, height: 30),
-        ElevatedButton(
-            onPressed: () async {
-              final state = await FlPiP().isAvailable;
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: state
-                        ? const Text('PiP available')
-                        : const Text('PiP unavailable')));
-              }
-            },
-            child: const Text('PiPStatus isAvailable')),
+        const Text('The current pip is created using a new engine'),
+        const SizedBox(
+            height: 50,
+            width: double.infinity,
+            child: FlAnimationWave(
+                value: 0.5, color: Colors.red, direction: Axis.vertical))
       ])));
 }

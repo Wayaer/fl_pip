@@ -1,6 +1,7 @@
 package com.fl.pip
 
 
+import android.R
 import android.app.Activity
 import android.app.ActivityManager
 import android.app.PictureInPictureParams
@@ -20,8 +21,9 @@ import android.util.Rational
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
-import android.view.Window
 import android.view.WindowManager
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import io.flutter.FlutterInjector
@@ -141,6 +143,8 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 setColor(Color.parseColor((map["backgroundColor"] as String)))
             }
             flutterView!!.background = backgroundDrawable
+
+
             val dartEntrypoint = DartExecutor.DartEntrypoint(
                 FlutterInjector.instance().flutterLoader().findAppBundlePath(), "pipMain"
             )
@@ -170,6 +174,18 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             x = (map["left"] as Double?)?.toInt() ?: 50
             y = (map["top"] as Double?)?.toInt() ?: (displayMetrics.heightPixels / 2)
         }
+        val close = ImageView(context)
+        close.setOnClickListener {
+            foreground()
+            destroyEngin()
+        }
+        close.setImageResource(R.drawable.ic_menu_close_clear_cancel)
+        val closeLayoutParams = FrameLayout.LayoutParams(
+            dp2px(25), dp2px(25)
+        )
+        closeLayoutParams.gravity = Gravity.TOP or Gravity.END
+        closeLayoutParams.setMargins(0, dp2px(2), dp2px(2), 0)
+        flutterView!!.addView(close, closeLayoutParams)
         @Suppress("ClickableViewAccessibility") flutterView!!.setOnTouchListener(object :
             View.OnTouchListener {
             private var initialX: Int = 0
@@ -215,8 +231,9 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     }
 
     private fun destroyEngin() {
+        channel.invokeMethod("onPiPStatus", 1)
         if (flutterView != null) {
-            flutterView!!.detachFromFlutterEngine()
+            flutterView?.detachFromFlutterEngine()
             windowManager.removeView(flutterView)
         }
         flutterView = null

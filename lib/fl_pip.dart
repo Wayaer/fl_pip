@@ -171,8 +171,8 @@ class FlPiPConfig {
 class FlPiPAndroidConfig extends FlPiPConfig {
   const FlPiPAndroidConfig(
       {this.aspectRatio = const Rational.square(),
-      this.radius = 12,
-      this.backgroundColor = Colors.black54,
+      this.radius = 0,
+      this.backgroundColor = Colors.transparent,
       super.rect});
 
   /// android 画中画窗口宽高比例

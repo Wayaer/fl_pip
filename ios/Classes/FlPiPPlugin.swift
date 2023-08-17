@@ -106,8 +106,8 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
 
             let x = args["left"] as? CGFloat ?? UIScreen.main.bounds.size.width/2
             let y = args["top"] as? CGFloat ?? UIScreen.main.bounds.size.height/2
-            let width = args["width"] as? CGFloat ?? 0.1
-            let height = args["height"] as? CGFloat ?? 0.1
+            let width = args["width"] as? CGFloat ?? 1
+            let height = args["height"] as? CGFloat ?? 1
 
             playerLayer!.frame = .init(x: x, y: y, width: width, height: height)
             player = AVPlayer(playerItem: AVPlayerItem(asset: AVURLAsset(url: URL(fileURLWithPath: bundlePath!))))

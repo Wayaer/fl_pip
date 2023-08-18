@@ -11,6 +11,12 @@ class MainApp extends StatefulWidget {
 
 class _MainAppState extends State<MainApp> {
   @override
+  void initState() {
+    super.initState();
+    log('====${FlPiP().hashCode}');
+  }
+
+  @override
   Widget build(BuildContext context) => Scaffold(
           body: Center(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -24,18 +30,16 @@ class _MainAppState extends State<MainApp> {
                 child: Text(i.toString()))),
         const Image(
             image: AssetImage('assets/logo.png'), width: 30, height: 30),
-        PiPBuilder(
-            pip: FlPiP(),
-            builder: (PiPStatus status) {
-              switch (status) {
-                case PiPStatus.enabled:
-                  return const Text('PiPStatus enabled');
-                case PiPStatus.disabled:
-                  return builderDisabled;
-                case PiPStatus.unavailable:
-                  return buildUnavailable;
-              }
-            }),
+        PiPBuilder(builder: (PiPStatus status) {
+          switch (status) {
+            case PiPStatus.enabled:
+              return const Text('PiPStatus enabled');
+            case PiPStatus.disabled:
+              return builderDisabled;
+            case PiPStatus.unavailable:
+              return buildUnavailable;
+          }
+        }),
         ElevatedButton(
             onPressed: () async {
               final state = await FlPiP().isAvailable;
@@ -83,8 +87,19 @@ class _MainAppState extends State<MainApp> {
       child: const Text('PiP unavailable'));
 }
 
-class PiPMainApp extends StatelessWidget {
-  const PiPMainApp({Key? key}) : super(key: key);
+class PiPMainApp extends StatefulWidget {
+  const PiPMainApp({super.key});
+
+  @override
+  State<PiPMainApp> createState() => _PiPMainAppState();
+}
+
+class _PiPMainAppState extends State<PiPMainApp> {
+  @override
+  void initState() {
+    super.initState();
+    log('====${FlPiP().hashCode}');
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(

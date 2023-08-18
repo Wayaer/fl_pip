@@ -9,11 +9,9 @@ typedef PiPBuilderCallback = Widget Function(PiPStatus status);
 class PiPBuilder extends StatefulWidget {
   const PiPBuilder({
     super.key,
-    required this.pip,
     required this.builder,
   });
 
-  final FlPiP pip;
   final PiPBuilderCallback builder;
 
   @override
@@ -25,10 +23,10 @@ class _PiPBuilderState extends State<PiPBuilder> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final value = await widget.pip.isAvailable;
+      final value = await FlPiP().isAvailable;
       if (!value) return;
-      widget.pip.status.addListener(listener);
-      await widget.pip.isActive;
+      FlPiP().status.addListener(listener);
+      await FlPiP().isActive;
     });
   }
 
@@ -37,11 +35,11 @@ class _PiPBuilderState extends State<PiPBuilder> {
   }
 
   @override
-  Widget build(BuildContext context) => widget.builder(widget.pip.status.value);
+  Widget build(BuildContext context) => widget.builder(FlPiP().status.value);
 
   @override
   void dispose() {
-    widget.pip.status.removeListener(listener);
+    FlPiP().status.removeListener(listener);
     super.dispose();
   }
 }
@@ -57,22 +55,24 @@ enum PiPStatus {
   unavailable
 }
 
+const _basicChannel = BasicMessageChannel('fl_pip/', StandardMessageCodec());
+
 class FlPiP {
   factory FlPiP() => _singleton ??= FlPiP._();
 
   static FlPiP? _singleton;
+  final _channel = const MethodChannel('fl_pip');
 
   FlPiP._() {
+    _basicChannel.setMessageHandler((message) async {});
     _channel.setMethodCallHandler((call) async {
       switch (call.method) {
-        case "onPiPStatus":
+        case 'onPiPStatus':
           final state = call.arguments as int;
           status.value = PiPStatus.values[state];
       }
     });
   }
-
-  final _channel = const MethodChannel('fl_pip');
 
   final ValueNotifier<PiPStatus> status = ValueNotifier(PiPStatus.unavailable);
 

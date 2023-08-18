@@ -37,10 +37,12 @@ import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.embedding.engine.plugins.util.GeneratedPluginRegister
+import io.flutter.plugin.common.BasicMessageChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import io.flutter.plugin.common.StandardMessageCodec
 
 
 /** FlPiPPlugin */
@@ -48,7 +50,11 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     companion object {
         lateinit var channel: MethodChannel
-        lateinit var rootEngine: FlutterEngine
+        lateinit var basicChannel: BasicMessageChannel<Any>
+        fun setPiPStatus(int: Int) {
+            channel.invokeMethod("onPiPStatus", int)
+            basicChannel.send(int)
+        }
     }
 
     private lateinit var context: Context
@@ -64,7 +70,12 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         pluginBinding = binding
         context = binding.applicationContext
         channel = MethodChannel(binding.binaryMessenger, "fl_pip")
+        basicChannel =
+            BasicMessageChannel(binding.binaryMessenger, "fl_pip/", StandardMessageCodec.INSTANCE)
         channel.setMethodCallHandler(this)
+        basicChannel.setMessageHandler { message, reply ->
+            Log.d("=====", message.toString())
+        }
         windowManager = context.getSystemService(Service.WINDOW_SERVICE) as WindowManager
     }
 
@@ -89,8 +100,7 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
             "enableWithEngine" -> result.success(enableWithEngine(call.arguments as Map<*, *>))
             "disable" -> {
-                foreground()
-                destroyEngin()
+                disable()
                 result.success(null)
             }
 
@@ -125,6 +135,17 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
     }
 
+    private fun disable() {
+        Log.d("=====", "====")
+        try {
+            setPiPStatus(1)
+        } catch (e: Exception) {
+            Log.d("=====", e.toString())
+        }
+        foreground()
+        disposeEngine()
+    }
+
     @RequiresApi(Build.VERSION_CODES.M)
     private fun enableWithEngine(map: Map<*, *>): Int {
         if (!checkPermission()) {
@@ -132,24 +153,27 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             activity.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
                 data = Uri.parse("package:${context.packageName}")
             })
+            setPiPStatus(1)
             return 1
         }
         val displayMetrics = context.resources.displayMetrics
+
         if (engine == null) {
+
             flutterView = FlutterView(context, FlutterSurfaceView(context, true))
             val backgroundDrawable = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
                 cornerRadius = (map["radius"] as Double).toFloat()
                 setColor(Color.parseColor((map["backgroundColor"] as String)))
             }
+
             flutterView!!.background = backgroundDrawable
-
-
             val dartEntrypoint = DartExecutor.DartEntrypoint(
                 FlutterInjector.instance().flutterLoader().findAppBundlePath(), "pipMain"
             )
             val engineGroup = pluginBinding.engineGroup ?: FlutterEngineGroup(context)
             engine = engineGroup.createAndRunEngine(context, dartEntrypoint)
+
             GeneratedPluginRegister.registerGeneratedPlugins(engine!!)
             FlutterEngineCache.getInstance().put(engineId, engine)
             flutterView!!.attachToFlutterEngine(engine!!)
@@ -158,7 +182,6 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             )
             engine!!.lifecycleChannel.appIsResumed()
         }
-
         val layoutParams = WindowManager.LayoutParams().apply {
             type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -176,8 +199,7 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
         val close = ImageView(context)
         close.setOnClickListener {
-            foreground()
-            destroyEngin()
+            this.disable()
         }
         close.setImageResource(R.drawable.ic_menu_close_clear_cancel)
         val closeLayoutParams = FrameLayout.LayoutParams(
@@ -214,6 +236,7 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             }
         })
         windowManager.addView(flutterView, layoutParams)
+        setPiPStatus(0)
         return 0
     }
 
@@ -230,8 +253,7 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         am.moveTaskToFront(activity.taskId, ActivityManager.MOVE_TASK_WITH_HOME)
     }
 
-    private fun destroyEngin() {
-        channel.invokeMethod("onPiPStatus", 1)
+    private fun disposeEngine() {
         if (flutterView != null) {
             flutterView?.detachFromFlutterEngine()
             windowManager.removeView(flutterView)
@@ -251,7 +273,7 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
-        destroyEngin()
+        disposeEngine()
     }
 
     override fun onDetachedFromActivity() {}

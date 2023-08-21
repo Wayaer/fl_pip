@@ -26,6 +26,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import fl.channel.FlBasicMessage
 import io.flutter.FlutterInjector
 import io.flutter.embedding.android.FlutterSurfaceView
 import io.flutter.embedding.android.FlutterView
@@ -37,12 +38,10 @@ import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.embedding.engine.plugins.util.GeneratedPluginRegister
-import io.flutter.plugin.common.BasicMessageChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import io.flutter.plugin.common.StandardMessageCodec
 
 
 /** FlPiPPlugin */
@@ -50,10 +49,8 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     companion object {
         lateinit var channel: MethodChannel
-        lateinit var basicChannel: BasicMessageChannel<Any>
         fun setPiPStatus(int: Int) {
-            channel.invokeMethod("onPiPStatus", int)
-            basicChannel.send(int)
+            FlBasicMessage.send(mapOf("onPiPStatus" to int))
         }
     }
 
@@ -70,12 +67,7 @@ class FlPiPPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         pluginBinding = binding
         context = binding.applicationContext
         channel = MethodChannel(binding.binaryMessenger, "fl_pip")
-        basicChannel =
-            BasicMessageChannel(binding.binaryMessenger, "fl_pip/", StandardMessageCodec.INSTANCE)
         channel.setMethodCallHandler(this)
-        basicChannel.setMessageHandler { message, reply ->
-            Log.d("=====", message.toString())
-        }
         windowManager = context.getSystemService(Service.WINDOW_SERVICE) as WindowManager
     }
 

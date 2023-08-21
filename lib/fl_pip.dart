@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fl_channel/fl_channel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -55,8 +56,6 @@ enum PiPStatus {
   unavailable
 }
 
-const _basicChannel = BasicMessageChannel('fl_pip/', StandardMessageCodec());
-
 class FlPiP {
   factory FlPiP() => _singleton ??= FlPiP._();
 
@@ -64,12 +63,15 @@ class FlPiP {
   final _channel = const MethodChannel('fl_pip');
 
   FlPiP._() {
-    _basicChannel.setMessageHandler((message) async {});
-    _channel.setMethodCallHandler((call) async {
-      switch (call.method) {
-        case 'onPiPStatus':
-          final state = call.arguments as int;
-          status.value = PiPStatus.values[state];
+    FlBasicMessage().initialize().then((value) {
+      if (value) {
+        FlBasicMessage().addListener((message) async {
+          if (message is Map && message.containsKey('onPiPStatus')) {
+            final state = message['onPiPStatus'] as int;
+            status.value = PiPStatus.values[state];
+          }
+          return null;
+        });
       }
     });
   }

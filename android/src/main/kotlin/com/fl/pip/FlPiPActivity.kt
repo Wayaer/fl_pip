@@ -7,13 +7,10 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.content.res.AssetManager
 import android.content.res.Configuration
 import android.graphics.BitmapFactory
-import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Rect
-import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -26,7 +23,6 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import io.flutter.FlutterInjector
 import io.flutter.embedding.android.FlutterActivity
@@ -75,6 +71,7 @@ open class FlPiPActivity : FlutterActivity() {
         private var engineId = "pip.flutter"
         private var engine: FlutterEngine? = null
         private var flutterView: FlutterView? = null
+        private var rootView: FrameLayout? = null
         private lateinit var windowManager: WindowManager
 
         override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
@@ -158,7 +155,6 @@ open class FlPiPActivity : FlutterActivity() {
         @RequiresApi(Build.VERSION_CODES.M)
         private fun enableWithEngine(map: Map<*, *>): Int {
             if (!checkPermission()) {
-                Toast.makeText(context, "请开启悬浮窗权限", Toast.LENGTH_SHORT).show()
                 activity.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
                     data = Uri.parse("package:${context.packageName}")
                 })
@@ -168,13 +164,7 @@ open class FlPiPActivity : FlutterActivity() {
             val displayMetrics = context.resources.displayMetrics
             if (engine == null) {
                 flutterView = FlutterView(context, FlutterSurfaceView(context, true))
-                val backgroundDrawable = GradientDrawable().apply {
-                    shape = GradientDrawable.RECTANGLE
-                    cornerRadius = (map["radius"] as Double).toFloat()
-                    setColor(Color.parseColor((map["backgroundColor"] as String)))
-                }
-
-                flutterView!!.background = backgroundDrawable
+                flutterView!!.elevation = 0F
                 val dartEntrypoint = DartExecutor.DartEntrypoint(
                     FlutterInjector.instance().flutterLoader().findAppBundlePath(), "pipMain"
                 )
@@ -183,11 +173,14 @@ open class FlPiPActivity : FlutterActivity() {
                 GeneratedPluginRegister.registerGeneratedPlugins(engine!!)
                 FlutterEngineCache.getInstance().put(engineId, engine)
                 flutterView!!.attachToFlutterEngine(engine!!)
+
                 engine!!.platformViewsController.attach(
                     context, engine!!.renderer, engine!!.dartExecutor
                 )
                 engine!!.lifecycleChannel.appIsResumed()
             }
+            val w = (map["width"] as Double?)?.toInt() ?: (displayMetrics.widthPixels - 100)
+            val h = (map["height"] as Double?)?.toInt() ?: 600
             val layoutParams = WindowManager.LayoutParams().apply {
                 type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -197,12 +190,14 @@ open class FlPiPActivity : FlutterActivity() {
                 format = PixelFormat.TRANSLUCENT
                 flags =
                     WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                width = (map["width"] as Double?)?.toInt() ?: (displayMetrics.widthPixels - 100)
-                height = (map["height"] as Double?)?.toInt() ?: 600
+                width = w
+                height = h
                 gravity = Gravity.START or Gravity.TOP
                 x = (map["left"] as Double?)?.toInt() ?: 50
                 y = (map["top"] as Double?)?.toInt() ?: (displayMetrics.heightPixels / 2)
             }
+            rootView = FrameLayout(context)
+            rootView!!.addView(flutterView, FrameLayout.LayoutParams(w, h))
             val close = ImageView(context)
             close.setOnClickListener {
                 this.disable()
@@ -220,9 +215,9 @@ open class FlPiPActivity : FlutterActivity() {
             val closeLayoutParams = FrameLayout.LayoutParams(
                 dp2px(22), dp2px(22)
             )
-            closeLayoutParams.gravity = Gravity.TOP or Gravity.END
-            closeLayoutParams.setMargins(0, dp2px(3), dp2px(3), 0)
-            flutterView!!.addView(close, closeLayoutParams)
+            closeLayoutParams.gravity = Gravity.END
+            closeLayoutParams.setMargins(0, dp2px(4), dp2px(4), 0)
+            rootView!!.addView(close, closeLayoutParams)
             @Suppress("ClickableViewAccessibility") flutterView!!.setOnTouchListener(object :
                 View.OnTouchListener {
                 private var initialX: Int = 0
@@ -244,13 +239,13 @@ open class FlPiPActivity : FlutterActivity() {
                             val dy = event.rawY - initialTouchY
                             layoutParams.x = (initialX + dx).toInt()
                             layoutParams.y = (initialY + dy).toInt()
-                            windowManager.updateViewLayout(flutterView, layoutParams)
+                            windowManager.updateViewLayout(rootView, layoutParams)
                         }
                     }
                     return false
                 }
             })
-            windowManager.addView(flutterView, layoutParams)
+            windowManager.addView(rootView, layoutParams)
             setPiPStatus(0)
             return 0
         }
@@ -271,9 +266,10 @@ open class FlPiPActivity : FlutterActivity() {
         private fun disposeEngine() {
             if (flutterView != null) {
                 flutterView?.detachFromFlutterEngine()
-                windowManager.removeView(flutterView)
+                windowManager.removeView(rootView)
             }
             flutterView = null
+            rootView = null
             engine?.let {
                 it.destroy()
                 FlutterEngineCache.getInstance().remove(engineId)

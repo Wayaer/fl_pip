@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:fl_channel/fl_channel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -56,27 +55,24 @@ enum PiPStatus {
   unavailable
 }
 
+const _channel = MethodChannel('fl_pip');
+
 class FlPiP {
   factory FlPiP() => _singleton ??= FlPiP._();
 
   static FlPiP? _singleton;
-  final _channel = const MethodChannel('fl_pip');
 
   FlPiP._() {
-    FlBasicMessage().initialize().then((value) {
-      if (value) {
-        FlBasicMessage().addListener((message) async {
-          if (message is Map && message.containsKey('onPiPStatus')) {
-            final state = message['onPiPStatus'] as int;
-            status.value = PiPStatus.values[state];
-          }
-          return null;
-        });
+    _channel.setMethodCallHandler((call) async {
+      switch (call.method) {
+        case 'onPiPStatus':
+          status.value = PiPStatus.values[call.arguments as int];
+          break;
       }
     });
   }
 
-  final ValueNotifier<PiPStatus> status = ValueNotifier(PiPStatus.unavailable);
+  final ValueNotifier<PiPStatus> status = ValueNotifier(PiPStatus.disabled);
 
   /// 开启画中画
   /// enable picture-in-picture
@@ -152,7 +148,8 @@ enum AppState {
 }
 
 class FlPiPConfig {
-  const FlPiPConfig({this.rect});
+  const FlPiPConfig(
+      {required this.path, this.packageName = 'fl_pip', this.rect});
 
   ///  ios 画中画弹出前视频的初始大小和位置,默认 [left:width/2,top:height/2,width:0.1,height:0.1]
   ///  ios The initial size and position of the video before the picture-in-picture pops up,default [left:width/2,top:height/2,width:0.1,height:0.1]
@@ -160,11 +157,21 @@ class FlPiPConfig {
   ///  android The size and position of the system popup,default [left:width/2,top:height/2,width:300,height:300]
   final Rect? rect;
 
+  final String path;
+
+  /// 资源地址的 packageName
+  /// Set packageName to the asset address
+  /// 如果使用你自己项目的资源文件 请设置[packageName]为null
+  /// If using your own project's resource files, set [packageName] to null
+  final String? packageName;
+
   Map<String, dynamic> toMap() => {
         'left': rect?.left,
         'top': rect?.top,
         'width': rect?.width,
-        'height': rect?.height
+        'height': rect?.height,
+        'packageName': packageName,
+        'path': path
       };
 }
 
@@ -172,7 +179,12 @@ class FlPiPConfig {
 /// android picture-in-picture configuration
 class FlPiPAndroidConfig extends FlPiPConfig {
   const FlPiPAndroidConfig(
-      {this.aspectRatio = const Rational.square(),
+      {
+      /// Android 悬浮框右上角的关闭按钮的图片地址
+      /// Android The image address of the Close button in the upper right corner of the floating
+      super.path = 'assets/close.png',
+      super.packageName = 'fl_pip',
+      this.aspectRatio = const Rational.square(),
       this.radius = 0,
       this.backgroundColor = Colors.transparent,
       super.rect});
@@ -208,21 +220,14 @@ class FlPiPAndroidConfig extends FlPiPConfig {
 /// ios picture-in-picture configuration
 class FlPiPiOSConfig extends FlPiPConfig {
   const FlPiPiOSConfig(
-      {this.path = 'assets/landscape.mp4',
-      this.packageName = 'fl_pip',
+      {
+      /// 视频路径 用于修修改画中画尺寸
+      /// The video [path] is used to modify the size of the picture in picture
+      super.path = 'assets/landscape.mp4',
+      super.packageName = 'fl_pip',
       this.enableControls = false,
       this.enablePlayback = false,
       super.rect});
-
-  /// 视频路径 用于修修改画中画尺寸
-  /// The video [path] is used to modify the size of the picture in picture
-  final String path;
-
-  /// 配置视频地址的 packageName
-  /// Set packageName to the video address
-  /// 如果使用你自己项目的资源文件 请设置[packageName]为null
-  /// If using your own project's resource files, set [packageName] to null
-  final String? packageName;
 
   /// 显示播放控制
   /// Display play control
@@ -237,8 +242,6 @@ class FlPiPiOSConfig extends FlPiPConfig {
         ...super.toMap(),
         'enableControls': enableControls,
         'enablePlayback': enablePlayback,
-        'packageName': packageName,
-        'path': path
       };
 }
 

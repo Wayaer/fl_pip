@@ -13,7 +13,7 @@ class _MainAppState extends State<MainApp> {
   @override
   void initState() {
     super.initState();
-    log('====${FlPiP().hashCode}');
+    FlPiP().isAvailable;
   }
 
   @override
@@ -96,16 +96,9 @@ class PiPMainApp extends StatefulWidget {
 
 class _PiPMainAppState extends State<PiPMainApp> {
   @override
-  void initState() {
-    super.initState();
-    log('====${FlPiP().hashCode}');
-  }
-
-  @override
   Widget build(BuildContext context) => Scaffold(
-      backgroundColor: Colors.black54,
-      body: Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
+          body: Center(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
         CountDown(
             onChanged: (int i) {},
             periodic: 1,

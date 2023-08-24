@@ -1,4 +1,4 @@
-## 0.1.0
+## 0.1.1
 
 * Fixed ios gesture conflicts
 * Added the method for creating an engine

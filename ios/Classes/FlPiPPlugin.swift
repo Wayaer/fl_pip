@@ -10,7 +10,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     private var pipController: AVPictureInPictureController?
 
     private var engineGroup: FlutterEngineGroup?
-    private var flutterEngine: FlutterEngine?
+    private var flPiPEngine: FlutterEngine?
     private var flutterController: FlutterViewController?
 
     private var withEngine: Bool = false
@@ -41,7 +41,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         case "disable":
             dispose()
             disposeEngine()
-            result(1)
+            result(true)
         case "isActive":
             if isAvailable() {
                 if pipController?.isPictureInPictureActive ?? false {
@@ -58,10 +58,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
                 /// 切换前台
             } else {
                 /// 切换后台
-                let targetSelect = #selector(NSXPCConnection.suspend)
-                if UIApplication.shared.responds(to: targetSelect) {
-                    UIApplication.shared.perform(targetSelect)
-                }
+                background()
             }
             result(nil)
         case "available":
@@ -71,13 +68,13 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         }
     }
 
-    func enable(_ args: [String: Any?]) -> Int {
+    func enable(_ args: [String: Any?]) -> Bool {
         do {
             try AVAudioSession.sharedInstance().setCategory(.playAndRecord, options: .mixWithOthers)
             try AVAudioSession.sharedInstance().setActive(true, options: [])
         } catch {
             print("FlPiP error : AVAudioSession.sharedInstance()")
-            return 1
+            return false
         }
         let path = args["path"] as! String
         dispose()
@@ -91,7 +88,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         let bundlePath = Bundle.main.path(forResource: assetPath, ofType: nil)
         if bundlePath == nil {
             print("FlPiP error : Unable to load video resources, \(path) in \(packageName ?? "current")")
-            return 1
+            return false
         }
         if isAvailable() {
             rootWindow = windows()?.filter { window in
@@ -99,7 +96,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
             }.first
             if rootWindow == nil {
                 print("FlPiP error : rootWindow is null")
-                return 1
+                return false
             }
             createFlutterEngine(args)
             playerLayer = AVPlayerLayer()
@@ -132,9 +129,9 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.4) {
                 self.pipController!.startPictureInPicture()
             }
-            return 0
+            return true
         }
-        return 2
+        return false
     }
 
     func createFlutterEngine(_ args: [String: Any?]) {
@@ -142,12 +139,12 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         if withEngine {
             engineGroup = FlutterEngineGroup(name: "pip.flutter", project: nil)
             let rootController = (rootWindow?.rootViewController as! FlutterViewController)
-            flutterEngine = engineGroup!.makeEngine(withEntrypoint: "pipMain", libraryURI: nil)
+            flPiPEngine = engineGroup!.makeEngine(withEntrypoint: "pipMain", libraryURI: nil)
             flutterController = FlutterViewController(
-                engine: flutterEngine!,
+                engine: flPiPEngine!,
                 nibName: rootController.nibName,
                 bundle: rootController.nibBundle)
-            flutterEngine!.run(withEntrypoint: "pipMain")
+            flPiPEngine!.run(withEntrypoint: "pipMain")
         }
     }
 
@@ -171,8 +168,8 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     public func disposeEngine() {
         flutterController?.removeFromParent()
         flutterController?.engine?.destroyContext()
-        flutterEngine?.viewController?.dismiss(animated: false)
-        flutterEngine = nil
+        flPiPEngine?.viewController?.dismiss(animated: false)
+        flPiPEngine = nil
         engineGroup = nil
         flutterController = nil
     }

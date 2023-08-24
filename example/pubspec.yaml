@@ -1,4 +1,4 @@
-name: fl_pip_example
+name: example
 description: Demonstrates how to use the fl_pip plugin.
 publish_to: 'none'
 version: 1.0.0+1

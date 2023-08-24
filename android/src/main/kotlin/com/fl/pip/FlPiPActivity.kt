@@ -86,7 +86,7 @@ open class FlPiPActivity : FlutterActivity() {
             when (call.method) {
                 "enable" -> {
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-                        result.success(2)
+                        result.success(false)
                         return
                     }
                     val args = call.arguments as Map<*, *>
@@ -101,13 +101,13 @@ open class FlPiPActivity : FlutterActivity() {
                             setSeamlessResizeEnabled(false)
                         }
                     }
-                    result.success(if (activity.enterPictureInPictureMode(builder.build())) 0 else 1)
+                    result.success(activity.enterPictureInPictureMode(builder.build()))
                 }
 
                 "enableWithEngine" -> result.success(enableWithEngine(call.arguments as Map<*, *>))
                 "disable" -> {
                     disable()
-                    result.success(null)
+                    result.success(true)
                 }
 
                 "isActive" -> {
@@ -153,13 +153,13 @@ open class FlPiPActivity : FlutterActivity() {
         }
 
         @RequiresApi(Build.VERSION_CODES.M)
-        private fun enableWithEngine(map: Map<*, *>): Int {
+        private fun enableWithEngine(map: Map<*, *>): Boolean {
             if (!checkPermission()) {
                 activity.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
                     data = Uri.parse("package:${context.packageName}")
                 })
                 setPiPStatus(1)
-                return 1
+                return false
             }
             val displayMetrics = context.resources.displayMetrics
             if (engine == null) {
@@ -247,7 +247,7 @@ open class FlPiPActivity : FlutterActivity() {
             })
             windowManager.addView(rootView, layoutParams)
             setPiPStatus(0)
-            return 0
+            return true
         }
 
         private fun background() {

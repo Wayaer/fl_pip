@@ -13,7 +13,19 @@ class _MainAppState extends State<MainApp> {
   @override
   void initState() {
     super.initState();
-    FlPiP().isAvailable;
+    FlPiP().status.addListener(listener);
+  }
+
+  void listener() {
+    if (FlPiP().status.value == PiPStatus.enabled) {
+      FlPiP().toggle(AppState.background);
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    FlPiP().status.removeListener(listener);
   }
 
   @override
@@ -64,13 +76,13 @@ class _MainAppState extends State<MainApp> {
                       path: 'assets/landscape.mp4', packageName: null),
                   android: const FlPiPAndroidConfig(
                       aspectRatio: Rational.maxLandscape()));
-              FlPiP().toggle(AppState.background);
             },
             child: const Text('Enable PiP')),
         ElevatedButton(
             onPressed: () {
-              FlPiP().enableWithEngine();
-              FlPiP().toggle(AppState.background);
+              FlPiP().enableWithEngine(
+                  ios: const FlPiPiOSConfig(
+                      path: 'assets/landscape.mp4', packageName: null));
             },
             child: const Text('Enable PiP with Engine')),
       ]);
@@ -113,6 +125,6 @@ class _PiPMainAppState extends State<PiPMainApp> {
             height: 50,
             width: double.infinity,
             child: FlAnimationWave(
-                value: 0.5, color: Colors.red, direction: Axis.vertical))
+                value: 0.5, color: Colors.red, direction: Axis.vertical)),
       ])));
 }

@@ -1,4 +1,4 @@
-import 'package:fl_pip_example/main_app.dart';
+import 'package:example/main_app.dart';
 import 'package:flutter/material.dart';
 
 void main() {

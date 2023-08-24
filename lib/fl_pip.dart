@@ -76,44 +76,41 @@ class FlPiP {
 
   /// 开启画中画
   /// enable picture-in-picture
-  Future<PiPStatus> enable({
+  Future<bool> enable({
     FlPiPAndroidConfig android = const FlPiPAndroidConfig(),
     FlPiPiOSConfig ios = const FlPiPiOSConfig(),
   }) async {
     if (!(_isAndroid || _isIos)) {
-      return PiPStatus.unavailable;
+      return false;
     }
     if (_isAndroid && !(android.aspectRatio.fitsInAndroidRequirements)) {
       throw RationalNotMatchingAndroidRequirementsException(
           android.aspectRatio);
     }
-    final int? state = await _channel.invokeMethod<int>(
+    final state = await _channel.invokeMethod<bool>(
         'enable', _isAndroid ? android.toMap() : ios.toMap());
-    status.value = PiPStatus.values[state ?? 2];
-    return status.value;
+    return state ?? false;
   }
 
   /// 开启画中画 创建新的 engine
   /// enable picture-in-picture use Engine
-  Future<PiPStatus> enableWithEngine({
+  Future<bool> enableWithEngine({
     FlPiPAndroidConfig android = const FlPiPAndroidConfig(),
     FlPiPiOSConfig ios = const FlPiPiOSConfig(),
   }) async {
     if (!(_isAndroid || _isIos)) {
-      return PiPStatus.unavailable;
+      return false;
     }
-    final int? state = await _channel.invokeMethod<int>(
+    final state = await _channel.invokeMethod<bool>(
         'enableWithEngine', {..._isAndroid ? android.toMap() : ios.toMap()});
-    status.value = PiPStatus.values[state ?? 2];
-    return status.value;
+    return state ?? false;
   }
 
   /// 关闭画中画
   /// disable picture-in-picture
-  Future<PiPStatus> disable() async {
-    final int? state = await _channel.invokeMethod<int>('disable');
-    status.value = PiPStatus.values[state ?? 1];
-    return status.value;
+  Future<bool> disable() async {
+    final state = await _channel.invokeMethod<bool>('disable');
+    return state ?? false;
   }
 
   /// 画中画状态
@@ -148,8 +145,7 @@ enum AppState {
 }
 
 class FlPiPConfig {
-  const FlPiPConfig(
-      {required this.path, this.packageName = 'fl_pip', this.rect});
+  const FlPiPConfig({required this.path, this.packageName, this.rect});
 
   ///  ios 画中画弹出前视频的初始大小和位置,默认 [left:width/2,top:height/2,width:0.1,height:0.1]
   ///  ios The initial size and position of the video before the picture-in-picture pops up,default [left:width/2,top:height/2,width:0.1,height:0.1]

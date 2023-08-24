@@ -80,7 +80,7 @@ class FlPiP {
     FlPiPAndroidConfig android = const FlPiPAndroidConfig(),
     FlPiPiOSConfig ios = const FlPiPiOSConfig(),
   }) async {
-    if (!(_isAndroid || _isIos)) {
+    if (!(_isAndroid || _isIOS)) {
       return false;
     }
     if (_isAndroid && !(android.aspectRatio.fitsInAndroidRequirements)) {
@@ -98,7 +98,7 @@ class FlPiP {
     FlPiPAndroidConfig android = const FlPiPAndroidConfig(),
     FlPiPiOSConfig ios = const FlPiPiOSConfig(),
   }) async {
-    if (!(_isAndroid || _isIos)) {
+    if (!(_isAndroid || _isIOS)) {
       return false;
     }
     final state = await _channel.invokeMethod<bool>(
@@ -288,4 +288,4 @@ class RationalNotMatchingAndroidRequirementsException implements Exception {
 
 bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
 
-bool get _isIos => defaultTargetPlatform == TargetPlatform.iOS;
+bool get _isIOS => defaultTargetPlatform == TargetPlatform.iOS;

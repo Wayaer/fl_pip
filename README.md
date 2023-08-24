@@ -51,6 +51,14 @@ void enable() {
           aspectRatio: const Rational.maxLandscape()));
 }
 
+/// 开启画中画并创建一个新的Engine
+/// Open picture-in-picture and create a new Engine
+void enableWithEngine() {
+  FlPiP().enableWithEngine(
+      ios: const FlPiPiOSConfig(
+          path: 'assets/landscape.mp4', packageName: null));
+}
+
 /// 是否支持画中画
 /// Whether to support picture in picture
 void isAvailable() {
@@ -70,6 +78,24 @@ void isActive() {
 void toggle() {
   FlPiP().toggle();
 }
+
+/// 退出画中画
+/// Quit painting in picture
+void disable() {
+  FlPiP().disable();
+}
+```
+
+- 如果使用enableWithEngine方法必须在main文件中添加这个main方法
+- The main method must be added to the main file if the enableWithEngine method is used
+
+```dart
+/// mainName must be the same as the method name
+@pragma('vm:entry-point')
+void pipMain() {
+  runApp(YourApp());
+}
+
 ```
 
 ## Display effect

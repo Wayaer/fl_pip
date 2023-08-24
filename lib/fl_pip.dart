@@ -9,11 +9,9 @@ typedef PiPBuilderCallback = Widget Function(PiPStatus status);
 class PiPBuilder extends StatefulWidget {
   const PiPBuilder({
     super.key,
-    required this.pip,
     required this.builder,
   });
 
-  final FlPiP pip;
   final PiPBuilderCallback builder;
 
   @override
@@ -25,10 +23,10 @@ class _PiPBuilderState extends State<PiPBuilder> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final value = await widget.pip.isAvailable;
+      final value = await FlPiP().isAvailable;
       if (!value) return;
-      widget.pip.status.addListener(listener);
-      await widget.pip.isActive;
+      FlPiP().status.addListener(listener);
+      await FlPiP().isActive;
     });
   }
 
@@ -37,11 +35,11 @@ class _PiPBuilderState extends State<PiPBuilder> {
   }
 
   @override
-  Widget build(BuildContext context) => widget.builder(widget.pip.status.value);
+  Widget build(BuildContext context) => widget.builder(FlPiP().status.value);
 
   @override
   void dispose() {
-    widget.pip.status.removeListener(listener);
+    FlPiP().status.removeListener(listener);
     super.dispose();
   }
 }
@@ -57,6 +55,8 @@ enum PiPStatus {
   unavailable
 }
 
+const _channel = MethodChannel('fl_pip');
+
 class FlPiP {
   factory FlPiP() => _singleton ??= FlPiP._();
 
@@ -65,31 +65,52 @@ class FlPiP {
   FlPiP._() {
     _channel.setMethodCallHandler((call) async {
       switch (call.method) {
-        case "onPiPStatus":
-          final state = call.arguments as int;
-          status.value = PiPStatus.values[state];
+        case 'onPiPStatus':
+          status.value = PiPStatus.values[call.arguments as int];
+          break;
       }
     });
   }
 
-  final _channel = const MethodChannel('fl_pip');
-
-  final ValueNotifier<PiPStatus> status = ValueNotifier(PiPStatus.unavailable);
+  final ValueNotifier<PiPStatus> status = ValueNotifier(PiPStatus.disabled);
 
   /// 开启画中画
-  /// Open picture-in-picture
-  Future<PiPStatus> enable({
-    required FlPiPAndroidConfig androidConfig,
-    required FlPiPiOSConfig iosConfig,
+  /// enable picture-in-picture
+  Future<bool> enable({
+    FlPiPAndroidConfig android = const FlPiPAndroidConfig(),
+    FlPiPiOSConfig ios = const FlPiPiOSConfig(),
   }) async {
-    if (_isAndroid && !(androidConfig.aspectRatio.fitsInAndroidRequirements)) {
-      throw RationalNotMatchingAndroidRequirementsException(
-          androidConfig.aspectRatio);
+    if (!(_isAndroid || _isIos)) {
+      return false;
     }
-    final int? state = await _channel.invokeMethod<int>(
-        'enable', _isAndroid ? androidConfig.toMap() : iosConfig.toMap());
-    status.value = PiPStatus.values[state ?? 2];
-    return status.value;
+    if (_isAndroid && !(android.aspectRatio.fitsInAndroidRequirements)) {
+      throw RationalNotMatchingAndroidRequirementsException(
+          android.aspectRatio);
+    }
+    final state = await _channel.invokeMethod<bool>(
+        'enable', _isAndroid ? android.toMap() : ios.toMap());
+    return state ?? false;
+  }
+
+  /// 开启画中画 创建新的 engine
+  /// enable picture-in-picture use Engine
+  Future<bool> enableWithEngine({
+    FlPiPAndroidConfig android = const FlPiPAndroidConfig(),
+    FlPiPiOSConfig ios = const FlPiPiOSConfig(),
+  }) async {
+    if (!(_isAndroid || _isIos)) {
+      return false;
+    }
+    final state = await _channel.invokeMethod<bool>(
+        'enableWithEngine', {..._isAndroid ? android.toMap() : ios.toMap()});
+    return state ?? false;
+  }
+
+  /// 关闭画中画
+  /// disable picture-in-picture
+  Future<bool> disable() async {
+    final state = await _channel.invokeMethod<bool>('disable');
+    return state ?? false;
   }
 
   /// 画中画状态
@@ -123,35 +144,71 @@ enum AppState {
   background,
 }
 
+class FlPiPConfig {
+  const FlPiPConfig({required this.path, this.packageName, this.rect});
+
+  ///  ios 画中画弹出前视频的初始大小和位置,默认 [left:width/2,top:height/2,width:0.1,height:0.1]
+  ///  ios The initial size and position of the video before the picture-in-picture pops up,default [left:width/2,top:height/2,width:0.1,height:0.1]
+  ///  android 系统弹窗的大小和位置 ,默认 [left:width/2,top:height/2,width:300,height:300]
+  ///  android The size and position of the system popup,default [left:width/2,top:height/2,width:300,height:300]
+  final Rect? rect;
+
+  final String path;
+
+  /// 资源地址的 packageName
+  /// Set packageName to the asset address
+  /// 如果使用你自己项目的资源文件 请设置[packageName]为null
+  /// If using your own project's resource files, set [packageName] to null
+  final String? packageName;
+
+  Map<String, dynamic> toMap() => {
+        'left': rect?.left,
+        'top': rect?.top,
+        'width': rect?.width,
+        'height': rect?.height,
+        'packageName': packageName,
+        'path': path
+      };
+}
+
 /// android 画中画配置
 /// android picture-in-picture configuration
-class FlPiPAndroidConfig {
-  FlPiPAndroidConfig({
-    this.aspectRatio = const Rational.square(),
-  });
+class FlPiPAndroidConfig extends FlPiPConfig {
+  const FlPiPAndroidConfig(
+      {
+      /// Android 悬浮框右上角的关闭按钮的图片地址
+      /// Android The image address of the Close button in the upper right corner of the floating
+      super.path = 'assets/close.png',
+      super.packageName = 'fl_pip',
+      this.aspectRatio = const Rational.square(),
+      super.rect});
 
+  /// android 画中画窗口宽高比例
+  /// android picture in picture window width-height ratio
   final Rational aspectRatio;
 
-  Map<String, dynamic> toMap() => aspectRatio.toMap();
+  @override
+  Map<String, dynamic> toMap() => {...aspectRatio.toMap(), ...super.toMap()};
+
+  String toHex(Color color) =>
+      '#${color.alpha.toRadixString(16).padLeft(2, '0')}'
+      '${color.red.toRadixString(16).padLeft(2, '0')}'
+      '${color.green.toRadixString(16).padLeft(2, '0')}'
+      '${color.blue.toRadixString(16).padLeft(2, '0')}';
 }
 
 /// ios 画中画配置
 /// ios picture-in-picture configuration
-class FlPiPiOSConfig {
-  FlPiPiOSConfig({
-    this.path = 'assets/landscape.mp4',
-    this.packageName = 'fl_pip',
-    this.enableControls = false,
-    this.enablePlayback = false,
-  });
-
-  /// 视频路径 用于修修改画中画尺寸
-  /// The video path is used to modify the size of the picture in picture
-  final String path;
-
-  /// 配置视频地址的 packageName
-  /// Set packageName to the video address
-  final String? packageName;
+class FlPiPiOSConfig extends FlPiPConfig {
+  const FlPiPiOSConfig(
+      {
+      /// 视频路径 用于修修改画中画尺寸
+      /// The video [path] is used to modify the size of the picture in picture
+      super.path = 'assets/landscape.mp4',
+      super.packageName = 'fl_pip',
+      this.enableControls = false,
+      this.enablePlayback = false,
+      super.rect});
 
   /// 显示播放控制
   /// Display play control
@@ -161,11 +218,11 @@ class FlPiPiOSConfig {
   /// Turn on playback speed
   final bool enablePlayback;
 
+  @override
   Map<String, dynamic> toMap() => {
+        ...super.toMap(),
         'enableControls': enableControls,
         'enablePlayback': enablePlayback,
-        'packageName': packageName,
-        'path': path
       };
 }
 
@@ -230,3 +287,5 @@ class RationalNotMatchingAndroidRequirementsException implements Exception {
 }
 
 bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
+
+bool get _isIos => defaultTargetPlatform == TargetPlatform.iOS;

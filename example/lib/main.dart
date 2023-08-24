@@ -1,60 +1,23 @@
-import 'package:fl_pip/fl_pip.dart';
+import 'package:example/main_app.dart';
 import 'package:flutter/material.dart';
 
 void main() {
   runApp(MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(),
-      home: const MyApp()));
+      theme: ThemeData.light(useMaterial3: true),
+      darkTheme: ThemeData.dark(useMaterial3: true),
+      home: const MainApp()));
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  @override
-  Widget build(BuildContext context) => PiPBuilder(
-      pip: FlPiP(),
-      builder: (PiPStatus status) {
-        switch (status) {
-          case PiPStatus.enabled:
-            return buildEnabled;
-          case PiPStatus.disabled:
-            return builderDisabled;
-          case PiPStatus.unavailable:
-            return buildUnavailable;
-        }
-      });
-
-  Widget get buildEnabled => Scaffold(
-      body: Container(
-          alignment: Alignment.center, child: const Text('PiPStatus enabled')));
-
-  Widget get builderDisabled => Scaffold(
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {
-            FlPiP().enable(
-                iosConfig: FlPiPiOSConfig(),
-                androidConfig: FlPiPAndroidConfig(
-                    aspectRatio: const Rational.maxLandscape()));
-          },
-          label: const Text('Enable PiP'),
-          icon: const Icon(Icons.picture_in_picture)),
-      body: Container(
-          alignment: Alignment.center,
-          child: const Text('PiPStatus disabled')));
-
-  Widget get buildUnavailable => Scaffold(
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {
-            FlPiP().isAvailable;
-          },
-          label: const Text('PiP unavailable')),
-      appBar: AppBar(title: const Text("PiP unavailable")));
+/// mainName must be the same as the method name
+@pragma('vm:entry-point')
+void pipMain() {
+  runApp(ClipRRect(
+    borderRadius: BorderRadius.circular(12),
+    child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData.light(useMaterial3: true),
+        darkTheme: ThemeData.dark(useMaterial3: true),
+        home: const PiPMainApp()),
+  ));
 }

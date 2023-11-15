@@ -259,8 +259,12 @@ open class FlPiPActivity : FlutterActivity() {
 
         private fun foreground() {
             /// 切换前台
-            val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-            am.moveTaskToFront(activity.taskId, ActivityManager.MOVE_TASK_WITH_HOME)
+//            val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+//            am.moveTaskToFront(activity.taskId, ActivityManager.MOVE_TASK_WITH_HOME)
+            val intent =
+                activity.packageManager.getLaunchIntentForPackage(activity.applicationContext.packageName)
+            intent?.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            activity.startActivity(intent)
         }
 
         private fun disposeEngine() {

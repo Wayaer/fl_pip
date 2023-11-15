@@ -83,26 +83,15 @@ class FlPiP {
     if (!(_isAndroid || _isIOS)) {
       return false;
     }
-    if (_isAndroid && !(android.aspectRatio.fitsInAndroidRequirements)) {
+
+    if (_isAndroid &&
+        !(android.aspectRatio.fitsInAndroidRequirements) &&
+        !android.createNewEngine) {
       throw RationalNotMatchingAndroidRequirementsException(
           android.aspectRatio);
     }
     final state = await _channel.invokeMethod<bool>(
         'enable', _isAndroid ? android.toMap() : ios.toMap());
-    return state ?? false;
-  }
-
-  /// 开启画中画 创建新的 engine
-  /// enable picture-in-picture use Engine
-  Future<bool> enableWithEngine({
-    FlPiPAndroidConfig android = const FlPiPAndroidConfig(),
-    FlPiPiOSConfig ios = const FlPiPiOSConfig(),
-  }) async {
-    if (!(_isAndroid || _isIOS)) {
-      return false;
-    }
-    final state = await _channel.invokeMethod<bool>(
-        'enableWithEngine', {..._isAndroid ? android.toMap() : ios.toMap()});
     return state ?? false;
   }
 
@@ -145,7 +134,12 @@ enum AppState {
 }
 
 class FlPiPConfig {
-  const FlPiPConfig({required this.path, this.packageName, this.rect});
+  const FlPiPConfig(
+      {required this.path,
+      this.enabledWhenBackground = false,
+      this.createNewEngine = false,
+      this.packageName,
+      this.rect});
 
   ///  ios 画中画弹出前视频的初始大小和位置,默认 [left:width/2,top:height/2,width:0.1,height:0.1]
   ///  ios The initial size and position of the video before the picture-in-picture pops up,default [left:width/2,top:height/2,width:0.1,height:0.1]
@@ -161,12 +155,22 @@ class FlPiPConfig {
   /// If using your own project's resource files, set [packageName] to null
   final String? packageName;
 
+  /// Enabled when the app is in the background
+  /// 当app处于后台时启用
+  final bool enabledWhenBackground;
+
+  /// 创建新的 engine
+  /// create new engine
+  final bool createNewEngine;
+
   Map<String, dynamic> toMap() => {
         'left': rect?.left,
         'top': rect?.top,
         'width': rect?.width,
         'height': rect?.height,
         'packageName': packageName,
+        'enabledWhenBackground': enabledWhenBackground,
+        'createNewEngine': createNewEngine,
         'path': path
       };
 }
@@ -181,6 +185,8 @@ class FlPiPAndroidConfig extends FlPiPConfig {
       super.path = 'assets/close.png',
       super.packageName = 'fl_pip',
       this.aspectRatio = const Rational.square(),
+      super.enabledWhenBackground = false,
+      super.createNewEngine = false,
       super.rect});
 
   /// android 画中画窗口宽高比例
@@ -208,6 +214,8 @@ class FlPiPiOSConfig extends FlPiPConfig {
       super.packageName = 'fl_pip',
       this.enableControls = false,
       this.enablePlayback = false,
+      super.enabledWhenBackground = true,
+      super.createNewEngine = true,
       super.rect});
 
   /// 显示播放控制

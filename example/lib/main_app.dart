@@ -11,24 +11,6 @@ class MainApp extends StatefulWidget {
 
 class _MainAppState extends State<MainApp> {
   @override
-  void initState() {
-    super.initState();
-    FlPiP().status.addListener(listener);
-  }
-
-  void listener() {
-    if (FlPiP().status.value == PiPStatus.enabled) {
-      FlPiP().toggle(AppState.background);
-    }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    FlPiP().status.removeListener(listener);
-  }
-
-  @override
   Widget build(BuildContext context) => Scaffold(
           body: Center(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -40,8 +22,6 @@ class _MainAppState extends State<MainApp> {
                 padding:
                     const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
                 child: Text(i.toString()))),
-        const Image(
-            image: AssetImage('assets/logo.png'), width: 30, height: 30),
         PiPBuilder(builder: (PiPStatus status) {
           switch (status) {
             case PiPStatus.enabled:
@@ -63,12 +43,17 @@ class _MainAppState extends State<MainApp> {
               }
             },
             child: const Text('PiPStatus isAvailable')),
+        ElevatedButton(
+            onPressed: () {
+              FlPiP().toggle(AppState.background);
+            },
+            child: const Text('toggle')),
       ])));
 
   Widget get builderDisabled =>
       Column(mainAxisSize: MainAxisSize.min, children: [
         const Text('PiPStatus disabled'),
-        const SizedBox(height: 20),
+        const SizedBox(height: 10),
         ElevatedButton(
             onPressed: () {
               FlPiP().enable(
@@ -80,9 +65,12 @@ class _MainAppState extends State<MainApp> {
             child: const Text('Enable PiP')),
         ElevatedButton(
             onPressed: () {
-              FlPiP().enableWithEngine(
+              FlPiP().enable(
+                  android: const FlPiPAndroidConfig(createNewEngine: true),
                   ios: const FlPiPiOSConfig(
-                      path: 'assets/landscape.mp4', packageName: null));
+                      createNewEngine: true,
+                      path: 'assets/landscape.mp4',
+                      packageName: null));
             },
             child: const Text('Enable PiP with Engine')),
       ]);
@@ -122,7 +110,7 @@ class _PiPMainAppState extends State<PiPMainApp> {
                 child: Text(i.toString()))),
         const Text('The current pip is created using a new engine'),
         const SizedBox(
-            height: 50,
+            height: 20,
             width: double.infinity,
             child: FlAnimationWave(
                 value: 0.5, color: Colors.red, direction: Axis.vertical)),

@@ -1,3 +1,8 @@
+## 1.0.0
+
+* Removed `FlPiP().enableWithEngine`
+* Add `createNewEngine`、`enabledWhenBackground` to `FlPiPConfig()`
+
 ## 0.1.1
 
 * Fixed ios gesture conflicts

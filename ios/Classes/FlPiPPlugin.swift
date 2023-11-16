@@ -13,8 +13,8 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     private var flPiPEngine: FlutterEngine?
     private var flutterController: FlutterViewController?
 
-    private var withEngine: Bool = false
-
+    private var createNewEngine: Bool = false
+    private var enabledWhenBackground: Bool = false
     private var rootWindow: UIWindow?
 
     private var channel: FlutterMethodChannel
@@ -23,6 +23,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         let channel = FlutterMethodChannel(name: "fl_pip", binaryMessenger: registrar.messenger())
         let instance = FlPiPPlugin(channel, registrar)
         registrar.addMethodCallDelegate(instance, channel: channel)
+        registrar.addApplicationDelegate(instance)
     }
 
     init(_ channel: FlutterMethodChannel, _ registrar: FlutterPluginRegistrar) {
@@ -31,16 +32,28 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         super.init()
     }
 
+    private var enableArgs: [String: Any?] = [:]
+
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "enable":
-            result(enable(call.arguments as! [String: Any?]))
-        case "enableWithEngine":
-            withEngine = true
-            result(enable(call.arguments as! [String: Any?]))
+            enableArgs = call.arguments as! [String: Any?]
+            createNewEngine = enableArgs["createNewEngine"] as! Bool
+            enabledWhenBackground = enableArgs["enabledWhenBackground"] as! Bool
+            if isAvailable() {
+                rootWindow = windows()?.filter { window in
+                    window.isKeyWindow
+                }.first
+            }
+            if !enabledWhenBackground {
+                result(enable())
+                return
+            }
+            result(false)
         case "disable":
             dispose()
             disposeEngine()
+            enableArgs = [:]
             result(true)
         case "isActive":
             if isAvailable() {
@@ -68,7 +81,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         }
     }
 
-    func enable(_ args: [String: Any?]) -> Bool {
+    func enable() -> Bool {
         do {
             try AVAudioSession.sharedInstance().setCategory(.playAndRecord, options: .mixWithOthers)
             try AVAudioSession.sharedInstance().setActive(true, options: [])
@@ -76,9 +89,9 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
             print("FlPiP error : AVAudioSession.sharedInstance()")
             return false
         }
-        let path = args["path"] as! String
         dispose()
-        let packageName = args["packageName"] as? String
+        let path = enableArgs["path"] as! String
+        let packageName = enableArgs["packageName"] as? String
         let assetPath: String
         if packageName != nil {
             assetPath = registrar.lookupKey(forAsset: path, fromPackage: packageName!)
@@ -91,20 +104,20 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
             return false
         }
         if isAvailable() {
-            rootWindow = windows()?.filter { window in
-                window.isKeyWindow
-            }.first
+//            rootWindow = windows()?.filter { window in
+//                window.isKeyWindow
+//            }.first
             if rootWindow == nil {
                 print("FlPiP error : rootWindow is null")
                 return false
             }
-            createFlutterEngine(args)
+            createFlutterEngine()
             playerLayer = AVPlayerLayer()
 
-            let x = args["left"] as? CGFloat ?? UIScreen.main.bounds.size.width/2
-            let y = args["top"] as? CGFloat ?? UIScreen.main.bounds.size.height/2
-            let width = args["width"] as? CGFloat ?? 1
-            let height = args["height"] as? CGFloat ?? 1
+            let x = enableArgs["left"] as? CGFloat ?? UIScreen.main.bounds.size.width/2
+            let y = enableArgs["top"] as? CGFloat ?? UIScreen.main.bounds.size.height/2
+            let width = enableArgs["width"] as? CGFloat ?? 1
+            let height = enableArgs["height"] as? CGFloat ?? 1
 
             playerLayer!.frame = .init(x: x, y: y, width: width, height: height)
             player = AVPlayer(playerItem: AVPlayerItem(asset: AVURLAsset(url: URL(fileURLWithPath: bundlePath!))))
@@ -115,28 +128,30 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
             pipController = AVPictureInPictureController(playerLayer: playerLayer!)
             pipController!.delegate = self
 
-            let enableControls = args["enableControls"] as! Bool
+            let enableControls = enableArgs["enableControls"] as! Bool
             pipController!.setValue(enableControls ? 0 : 1, forKey: "controlsStyle")
 
-            let enablePlayback = args["enablePlayback"] as! Bool
+            let enablePlayback = enableArgs["enablePlayback"] as! Bool
             pipController!.setValue(enablePlayback ? 0 : 1, forKey: "requiresLinearPlayback")
 
             if #available(iOS 14.2, *) {
                 pipController!.canStartPictureInPictureAutomaticallyFromInline = true
             } else {}
+
             player!.play()
             rootWindow!.rootViewController?.view?.layer.addSublayer(playerLayer!)
             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.4) {
                 self.pipController!.startPictureInPicture()
             }
+
             return true
         }
         return false
     }
 
-    func createFlutterEngine(_ args: [String: Any?]) {
+    func createFlutterEngine() {
         disposeEngine()
-        if withEngine {
+        if createNewEngine {
             engineGroup = FlutterEngineGroup(name: "pip.flutter", project: nil)
             let rootController = (rootWindow?.rootViewController as! FlutterViewController)
             flPiPEngine = engineGroup!.makeEngine(withEntrypoint: "pipMain", libraryURI: nil)
@@ -181,7 +196,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     public func pictureInPictureControllerDidStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
         if let firstWindow = UIApplication.shared.windows.first, rootWindow != nil {
             let rect = firstWindow.rootViewController?.view.frame ?? CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.height)
-            if withEngine, flutterController != nil {
+            if createNewEngine, flutterController != nil {
                 flutterController!.view.frame = rect
                 firstWindow.rootViewController = flutterController
             } else if rootWindow != nil {
@@ -199,7 +214,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     }
 
     public func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-        if withEngine {
+        if createNewEngine {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [self] in
                 disposeEngine()
             }
@@ -217,6 +232,16 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         }
         dispose()
         channel.invokeMethod("onPiPStatus", arguments: 1)
+    }
+
+    public func applicationDidEnterBackground(_ application: UIApplication) {
+//        if enabledWhenBackground {
+//            player!.play()
+//            rootWindow!.rootViewController?.view?.layer.addSublayer(playerLayer!)
+//            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.4) {
+//                self.pipController!.startPictureInPicture()
+//            }
+//        }
     }
 
     public func windows() -> [UIWindow]? {

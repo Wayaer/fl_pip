@@ -214,8 +214,8 @@ class FlPiPiOSConfig extends FlPiPConfig {
       super.packageName = 'fl_pip',
       this.enableControls = false,
       this.enablePlayback = false,
-      super.enabledWhenBackground = true,
-      super.createNewEngine = true,
+      super.enabledWhenBackground = false,
+      super.createNewEngine = false,
       super.rect});
 
   /// 显示播放控制

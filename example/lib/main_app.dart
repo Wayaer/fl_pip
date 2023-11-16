@@ -66,6 +66,19 @@ class _MainAppState extends State<MainApp> {
         ElevatedButton(
             onPressed: () {
               FlPiP().enable(
+                  ios: const FlPiPiOSConfig(
+                      enabledWhenBackground: true,
+                      path: 'assets/landscape.mp4',
+                      packageName: null),
+                  android: const FlPiPAndroidConfig(
+                      enabledWhenBackground: true,
+                      aspectRatio: Rational.maxLandscape()));
+            },
+            child: const Text('Enable PiP\nenabledWhenBackground',
+                textAlign: TextAlign.center)),
+        ElevatedButton(
+            onPressed: () {
+              FlPiP().enable(
                   android: const FlPiPAndroidConfig(createNewEngine: true),
                   ios: const FlPiPiOSConfig(
                       createNewEngine: true,
@@ -73,6 +86,19 @@ class _MainAppState extends State<MainApp> {
                       packageName: null));
             },
             child: const Text('Enable PiP with Engine')),
+        ElevatedButton(
+            onPressed: () {
+              FlPiP().enable(
+                  android: const FlPiPAndroidConfig(
+                      enabledWhenBackground: true, createNewEngine: true),
+                  ios: const FlPiPiOSConfig(
+                      enabledWhenBackground: true,
+                      createNewEngine: true,
+                      path: 'assets/landscape.mp4',
+                      packageName: null));
+            },
+            child: const Text('Enable PiP with Engine\nenabledWhenBackground',
+                textAlign: TextAlign.center)),
       ]);
 
   Widget get buildUnavailable => ElevatedButton(

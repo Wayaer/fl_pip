@@ -1,17 +1,41 @@
 package com.fl.pip
 
 import android.app.Activity
+import android.app.ActivityManager
 import android.app.Application
+import android.app.PictureInPictureParams
+import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.graphics.BitmapFactory
+import android.graphics.PixelFormat
+import android.graphics.Rect
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.util.Log
+import android.util.Rational
+import android.view.Gravity
+import android.view.MotionEvent
+import android.view.View
+import android.view.WindowManager
+import android.widget.FrameLayout
+import android.widget.ImageView
+import io.flutter.FlutterInjector
 import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterSurfaceView
+import io.flutter.embedding.android.FlutterView
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.embedding.engine.FlutterEngineCache
+import io.flutter.embedding.engine.FlutterEngineGroup
+import io.flutter.embedding.engine.dart.DartExecutor
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
+import io.flutter.embedding.engine.plugins.util.GeneratedPluginRegister
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 
@@ -40,12 +64,20 @@ open class FlPiPActivity : FlutterActivity() {
             }
         }
 
-        private var pipHelper: FlPiPHelper? = null
-        private var enabledWhenBackground = false
+
         private lateinit var context: Context
         private lateinit var activity: Activity
         private lateinit var pluginBinding: FlutterPlugin.FlutterPluginBinding
 
+        private var enableArgs: Map<*, *> = mutableMapOf<String, Any?>()
+
+        private var engineId = "pip.flutter"
+        private var engine: FlutterEngine? = null
+        private var flutterView: FlutterView? = null
+        private var windowManager: WindowManager? = null
+        private var rootView: FrameLayout? = null
+        private var createNewEngine = false
+        private var enabledWhenBackground = false
 
         override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
             pluginBinding = binding
@@ -57,23 +89,16 @@ open class FlPiPActivity : FlutterActivity() {
         override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
             when (call.method) {
                 "enable" -> {
-                    val args = call.arguments as Map<*, *>
-                    enabledWhenBackground = args["enabledWhenBackground"] as Boolean
-                    var status = false
-                    if (pipHelper != null && pipHelper!!.createNewEngine && pipHelper!!.engine == null) {
-                        pipHelper = null
+                    enableArgs = call.arguments as Map<*, *>
+                    enabledWhenBackground = enableArgs["enabledWhenBackground"] as Boolean
+                    if (!enabledWhenBackground) {
+                        result.success(enable())
+                        return
                     }
-                    if (pipHelper == null) {
-                        pipHelper = FlPiPHelper(
-                            pluginBinding, args, activity, context
-                        ) { disposeHelper() }
-                        if (!enabledWhenBackground) status = pipHelper!!.enable()
-                    }
-                    result.success(status)
+                    result.success(false)
                 }
 
                 "disable" -> {
-                    disposeHelper()
                     launchApp()
                     result.success(true)
                 }
@@ -117,10 +142,6 @@ open class FlPiPActivity : FlutterActivity() {
             }
         }
 
-        private fun disposeHelper() {
-            pipHelper?.dispose()
-            pipHelper = null
-        }
 
         private fun background() {
             /// 切换后台
@@ -136,6 +157,177 @@ open class FlPiPActivity : FlutterActivity() {
                 activity.packageManager.getLaunchIntentForPackage(activity.applicationContext.packageName)
             intent?.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             activity.startActivity(intent)
+        }
+
+
+        private fun enable(): Boolean {
+            createNewEngine = enableArgs["createNewEngine"] as Boolean
+            return if (createNewEngine) {
+                enableWM(activity)
+            } else {
+                enablePiP(activity)
+            }
+        }
+
+
+        private fun enablePiP(activity: Activity): Boolean {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                return false
+            }
+            val pipBuilder = PictureInPictureParams.Builder().apply {
+                setAspectRatio(
+                    Rational(
+                        enableArgs["numerator"] as Int, enableArgs["denominator"] as Int
+                    )
+                )
+                setSourceRectHint(Rect(0, 0, 0, 0))
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    setSeamlessResizeEnabled(false)
+                }
+            }
+            return activity.enterPictureInPictureMode(pipBuilder.build())
+        }
+
+        private fun enableWM(activity: Activity): Boolean {
+            if (!checkPermission()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    activity.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                    })
+                }
+                setPiPStatus(1)
+                return false
+            }
+
+            val displayMetrics = context.resources.displayMetrics
+            if (engine == null) {
+                flutterView = FlutterView(context, FlutterSurfaceView(context, true))
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    flutterView!!.elevation = 0F
+                }
+                val dartEntrypoint = DartExecutor.DartEntrypoint(
+                    FlutterInjector.instance().flutterLoader().findAppBundlePath(), "pipMain"
+                )
+                val engineGroup = pluginBinding.engineGroup ?: FlutterEngineGroup(context)
+                engine = engineGroup.createAndRunEngine(context, dartEntrypoint)
+                GeneratedPluginRegister.registerGeneratedPlugins(engine!!)
+                FlutterEngineCache.getInstance().put(engineId, engine)
+                flutterView!!.attachToFlutterEngine(engine!!)
+
+                engine!!.platformViewsController.attach(
+                    context, engine!!.renderer, engine!!.dartExecutor
+                )
+                engine!!.lifecycleChannel.appIsResumed()
+            }
+            val w = (enableArgs["width"] as Double?)?.toInt() ?: (displayMetrics.widthPixels - 100)
+            val h = (enableArgs["height"] as Double?)?.toInt() ?: 600
+            val layoutParams = WindowManager.LayoutParams().apply {
+                type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+                } else {
+                    @Suppress("Deprecation") WindowManager.LayoutParams.TYPE_TOAST
+                }
+                format = PixelFormat.TRANSLUCENT
+                flags =
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                width = w
+                height = h
+                gravity = Gravity.START or Gravity.TOP
+                x = (enableArgs["left"] as Double?)?.toInt() ?: 50
+                y = (enableArgs["top"] as Double?)?.toInt() ?: (displayMetrics.heightPixels / 2)
+            }
+            rootView = FrameLayout(context)
+            rootView!!.addView(flutterView, FrameLayout.LayoutParams(w, h))
+            val close = ImageView(context)
+            close.setOnClickListener {
+                setPiPStatus(1)
+                /// 切换前台
+                val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                am.moveTaskToFront(activity.taskId, ActivityManager.MOVE_TASK_WITH_HOME)
+                disposeEngine()
+            }
+            val packageName = enableArgs["packageName"] as String?
+            val closeIConPath: String = if (packageName == null) {
+                pluginBinding.flutterAssets.getAssetFilePathByName(enableArgs["path"] as String)
+            } else {
+                pluginBinding.flutterAssets.getAssetFilePathByName(
+                    enableArgs["path"] as String, packageName
+                )
+            }
+            val bitmap = BitmapFactory.decodeStream(context.assets.open(closeIConPath))
+            close.setImageBitmap(bitmap)
+            val closeLayoutParams = FrameLayout.LayoutParams(
+                dp2px(22), dp2px(22)
+            )
+            closeLayoutParams.gravity = Gravity.END
+            closeLayoutParams.setMargins(0, dp2px(4), dp2px(4), 0)
+            rootView!!.addView(close, closeLayoutParams)
+            windowManager = context.getSystemService(Service.WINDOW_SERVICE) as WindowManager
+            @Suppress("ClickableViewAccessibility") flutterView!!.setOnTouchListener(object :
+                View.OnTouchListener {
+                private var initialX: Int = 0
+                private var initialY: Int = 0
+                private var initialTouchX: Float = 0f
+                private var initialTouchY: Float = 0f
+
+                override fun onTouch(view: View, event: MotionEvent): Boolean {
+                    when (event.action) {
+                        MotionEvent.ACTION_DOWN -> {
+                            initialX = layoutParams.x
+                            initialY = layoutParams.y
+                            initialTouchX = event.rawX
+                            initialTouchY = event.rawY
+                        }
+
+                        MotionEvent.ACTION_MOVE -> {
+                            val dx = event.rawX - initialTouchX
+                            val dy = event.rawY - initialTouchY
+                            layoutParams.x = (initialX + dx).toInt()
+                            layoutParams.y = (initialY + dy).toInt()
+                            windowManager!!.updateViewLayout(rootView, layoutParams)
+                        }
+                    }
+                    return false
+                }
+            })
+            windowManager!!.addView(rootView, layoutParams)
+            setPiPStatus(0)
+            return true
+        }
+
+
+        private fun checkPermission(): Boolean {
+            var result = true
+            if (Build.VERSION.SDK_INT >= 23) {
+                try {
+                    val clazz: Class<*> = Settings::class.java
+                    val canDrawOverlays =
+                        clazz.getDeclaredMethod("canDrawOverlays", Context::class.java)
+                    result = canDrawOverlays.invoke(null, context) as Boolean
+                } catch (e: Exception) {
+                    println("FlPiP checkPermission error : ${Log.getStackTraceString(e)}")
+                }
+            }
+            return result
+        }
+
+        private fun disposeEngine() {
+            if (flutterView != null) {
+                flutterView?.detachFromFlutterEngine()
+                windowManager?.removeView(rootView)
+            }
+            flutterView = null
+            rootView = null
+            engine?.let {
+                it.destroy()
+                FlutterEngineCache.getInstance().remove(engineId)
+            }
+            engine = null
+        }
+
+        private fun dp2px(value: Int): Int {
+            val scale: Float = context.resources.displayMetrics.density
+            return (value * scale + 0.5f).toInt()
         }
 
         override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
@@ -158,17 +350,10 @@ open class FlPiPActivity : FlutterActivity() {
         private var activityLifecycleCallbacks = object : Application.ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
             override fun onActivityStarted(activity: Activity) {}
-            override fun onActivityResumed(activity: Activity) {
-                if (pipHelper == null) return
-                if (!pipHelper!!.createNewEngine) {
-                    pipHelper!!.isEnable = false
-                    pipHelper = null
-                }
-            }
-
+            override fun onActivityResumed(activity: Activity) {}
             override fun onActivityPaused(activity: Activity) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && enabledWhenBackground) {
-                    pipHelper?.enable()
+                    enable()
                 }
             }
 
@@ -177,8 +362,7 @@ open class FlPiPActivity : FlutterActivity() {
             override fun onActivityDestroyed(activity: Activity) {}
         }
 
-        override fun onDetachedFromActivityForConfigChanges() {
-        }
+        override fun onDetachedFromActivityForConfigChanges() {}
 
     }
 

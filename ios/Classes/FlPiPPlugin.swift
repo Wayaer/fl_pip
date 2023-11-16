@@ -37,15 +37,17 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "enable":
-            enableArgs = call.arguments as! [String: Any?]
-            createNewEngine = enableArgs["createNewEngine"] as! Bool
-            enabledWhenBackground = enableArgs["enabledWhenBackground"] as! Bool
             if isAvailable() {
+                enableArgs = call.arguments as! [String: Any?]
+                createNewEngine = enableArgs["createNewEngine"] as! Bool
+                enabledWhenBackground = enableArgs["enabledWhenBackground"] as! Bool
                 rootWindow = windows()?.filter { window in
                     window.isKeyWindow
                 }.first
+                result(enable())
+                return
             }
-            result(enable())
+            result(false)
         case "disable":
             dispose()
             disposeEngine()

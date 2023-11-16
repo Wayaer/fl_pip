@@ -45,11 +45,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
                     window.isKeyWindow
                 }.first
             }
-            if !enabledWhenBackground {
-                result(enable())
-                return
-            }
-            result(false)
+            result(enable())
         case "disable":
             dispose()
             disposeEngine()
@@ -104,16 +100,12 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
             return false
         }
         if isAvailable() {
-//            rootWindow = windows()?.filter { window in
-//                window.isKeyWindow
-//            }.first
             if rootWindow == nil {
                 print("FlPiP error : rootWindow is null")
                 return false
             }
             createFlutterEngine()
             playerLayer = AVPlayerLayer()
-
             let x = enableArgs["left"] as? CGFloat ?? UIScreen.main.bounds.size.width/2
             let y = enableArgs["top"] as? CGFloat ?? UIScreen.main.bounds.size.height/2
             let width = enableArgs["width"] as? CGFloat ?? 1
@@ -140,10 +132,11 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
 
             player!.play()
             rootWindow!.rootViewController?.view?.layer.addSublayer(playerLayer!)
-            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.4) {
-                self.pipController!.startPictureInPicture()
+            if !enabledWhenBackground {
+                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.4) {
+                    self.pipController!.startPictureInPicture()
+                }
             }
-
             return true
         }
         return false
@@ -221,27 +214,38 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         } else if rootWindow != nil {
             let rect = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.height)
             let firstWindow = UIApplication.shared.windows.first
-            let flController = (firstWindow!.rootViewController as! FlutterViewController)
-            let engine = flController.engine!
-            engine.viewController = nil
-            let newController = FlutterViewController(engine: flController.engine!, nibName: flController.nibName, bundle: flController.nibBundle)
-            flController.dismiss(animated: true)
-            firstWindow!.rootViewController = nil
-            newController.view.frame = rect
-            rootWindow?.rootViewController = newController
+            if firstWindow!.rootViewController is FlutterViewController {
+                let flController = (firstWindow!.rootViewController as! FlutterViewController)
+                let engine = flController.engine!
+                engine.viewController = nil
+                let newController = FlutterViewController(engine: flController.engine!, nibName: flController.nibName, bundle: flController.nibBundle)
+                flController.dismiss(animated: true)
+                firstWindow!.rootViewController = nil
+                newController.view.frame = rect
+                rootWindow?.rootViewController = newController
+            }
         }
         dispose()
         channel.invokeMethod("onPiPStatus", arguments: 1)
     }
 
+    private var backgroundTask: UIBackgroundTaskIdentifier?
+
     public func applicationDidEnterBackground(_ application: UIApplication) {
-//        if enabledWhenBackground {
-//            player!.play()
-//            rootWindow!.rootViewController?.view?.layer.addSublayer(playerLayer!)
-//            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.4) {
-//                self.pipController!.startPictureInPicture()
-//            }
-//        }
+        URLSessionConfiguration.background(withIdentifier: "")
+        backgroundTask = UIApplication.shared.beginBackgroundTask(expirationHandler: {
+            if self.enabledWhenBackground {
+                self.pipController!.startPictureInPicture()
+            }
+        })
+    }
+
+    public func applicationWillEnterForeground(_ application: UIApplication) {
+        if backgroundTask != nil {
+            UIApplication.shared.endBackgroundTask(backgroundTask!)
+            backgroundTask = UIBackgroundTaskIdentifier.invalid
+            backgroundTask = nil
+        }
     }
 
     public func windows() -> [UIWindow]? {

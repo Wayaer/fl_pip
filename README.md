@@ -51,14 +51,6 @@ void enable() {
           aspectRatio: const Rational.maxLandscape()));
 }
 
-/// 开启画中画并创建一个新的Engine
-/// Open picture-in-picture and create a new Engine
-void enableWithEngine() {
-  FlPiP().enableWithEngine(
-      ios: const FlPiPiOSConfig(
-          path: 'assets/landscape.mp4', packageName: null));
-}
-
 /// 是否支持画中画
 /// Whether to support picture in picture
 void isAvailable() {

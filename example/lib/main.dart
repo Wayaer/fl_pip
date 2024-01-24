@@ -2,6 +2,7 @@ import 'package:example/main_app.dart';
 import 'package:flutter/material.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData.light(useMaterial3: true),
@@ -12,6 +13,7 @@ void main() {
 /// mainName must be the same as the method name
 @pragma('vm:entry-point')
 void pipMain() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(ClipRRect(
     borderRadius: BorderRadius.circular(12),
     child: MaterialApp(

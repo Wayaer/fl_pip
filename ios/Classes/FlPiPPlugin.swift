@@ -19,6 +19,8 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
 
     private var channel: FlutterMethodChannel
 
+    var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "fl_pip", binaryMessenger: registrar.messenger())
         let instance = FlPiPPlugin(channel, registrar)
@@ -44,11 +46,16 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
                 rootWindow = windows()?.filter { window in
                     window.isKeyWindow
                 }.first
+//                backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "FlPiPTask") { [self] in
+//                    result(self.enable())
+//                }
                 result(enable())
                 return
             }
             result(false)
         case "disable":
+            UIApplication.shared.endBackgroundTask(backgroundTask)
+            backgroundTask = .invalid
             dispose()
             disposeEngine()
             enableArgs = [:]
@@ -231,23 +238,15 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         channel.invokeMethod("onPiPStatus", arguments: 1)
     }
 
-    private var backgroundTask: UIBackgroundTaskIdentifier?
-
     public func applicationDidEnterBackground(_ application: UIApplication) {
-        URLSessionConfiguration.background(withIdentifier: "")
-        backgroundTask = UIApplication.shared.beginBackgroundTask(expirationHandler: {
-            if self.enabledWhenBackground {
-                self.pipController!.startPictureInPicture()
-            }
-        })
+        if enabledWhenBackground {
+            pipController?.startPictureInPicture()
+        }
     }
 
     public func applicationWillEnterForeground(_ application: UIApplication) {
-        if backgroundTask != nil {
-            UIApplication.shared.endBackgroundTask(backgroundTask!)
-            backgroundTask = UIBackgroundTaskIdentifier.invalid
-            backgroundTask = nil
-        }
+        UIApplication.shared.endBackgroundTask(backgroundTask)
+        backgroundTask = UIBackgroundTaskIdentifier.invalid
     }
 
     public func windows() -> [UIWindow]? {

@@ -46,16 +46,15 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
                 rootWindow = windows()?.filter { window in
                     window.isKeyWindow
                 }.first
-//                backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "FlPiPTask") { [self] in
-//                    result(self.enable())
-//                }
+                backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "FlPiPTask") { [self] in
+                    self.endBackgroundTask()
+                }
                 result(enable())
                 return
             }
             result(false)
         case "disable":
-            UIApplication.shared.endBackgroundTask(backgroundTask)
-            backgroundTask = .invalid
+            endBackgroundTask()
             dispose()
             disposeEngine()
             enableArgs = [:]
@@ -84,6 +83,11 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         default:
             result(nil)
         }
+    }
+
+    func endBackgroundTask() {
+        UIApplication.shared.endBackgroundTask(backgroundTask)
+        backgroundTask = .invalid
     }
 
     func enable() -> Bool {
@@ -245,8 +249,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     }
 
     public func applicationWillEnterForeground(_ application: UIApplication) {
-        UIApplication.shared.endBackgroundTask(backgroundTask)
-        backgroundTask = UIBackgroundTaskIdentifier.invalid
+        endBackgroundTask()
     }
 
     public func windows() -> [UIWindow]? {

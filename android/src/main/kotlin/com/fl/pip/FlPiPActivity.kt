@@ -78,6 +78,8 @@ open class FlPiPActivity : FlutterActivity() {
         private var rootView: FrameLayout? = null
         private var createNewEngine = false
         private var enabledWhenBackground = false
+        private var isEnabled = false
+
 
         override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
             pluginBinding = binding
@@ -99,7 +101,11 @@ open class FlPiPActivity : FlutterActivity() {
                 }
 
                 "disable" -> {
-                    launchApp()
+                    enabledWhenBackground = false
+                    isEnabled = false
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && activity.isInPictureInPictureMode) {
+                        launchApp()
+                    }
                     result.success(true)
                 }
 
@@ -157,16 +163,19 @@ open class FlPiPActivity : FlutterActivity() {
                 activity.packageManager.getLaunchIntentForPackage(activity.applicationContext.packageName)
             intent?.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             activity.startActivity(intent)
+            isEnabled = false
         }
 
 
         private fun enable(): Boolean {
+            if (isEnabled) return false
             createNewEngine = enableArgs["createNewEngine"] as Boolean
-            return if (createNewEngine) {
+            val isEnabled = if (createNewEngine) {
                 enableWM(activity)
             } else {
                 enablePiP(activity)
             }
+            return isEnabled
         }
 
 
@@ -323,6 +332,7 @@ open class FlPiPActivity : FlutterActivity() {
                 FlutterEngineCache.getInstance().remove(engineId)
             }
             engine = null
+            isEnabled = false
         }
 
         private fun dp2px(value: Int): Int {

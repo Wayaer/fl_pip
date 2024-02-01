@@ -25,7 +25,14 @@ class _MainAppState extends State<MainApp> {
         PiPBuilder(builder: (PiPStatus status) {
           switch (status) {
             case PiPStatus.enabled:
-              return const Text('PiPStatus enabled');
+              return Column(children: [
+                const Text('PiPStatus enabled'),
+                ElevatedButton(
+                    onPressed: () {
+                      FlPiP().disable();
+                    },
+                    child: const Text('disable')),
+              ]);
             case PiPStatus.disabled:
               return builderDisabled;
             case PiPStatus.unavailable:
@@ -55,12 +62,15 @@ class _MainAppState extends State<MainApp> {
         const Text('PiPStatus disabled'),
         const SizedBox(height: 10),
         ElevatedButton(
-            onPressed: () {
-              FlPiP().enable(
+            onPressed: () async {
+              await FlPiP().enable(
                   ios: const FlPiPiOSConfig(
                       path: 'assets/landscape.mp4', packageName: null),
                   android: const FlPiPAndroidConfig(
                       aspectRatio: Rational.maxLandscape()));
+              Future.delayed(const Duration(seconds: 10), () {
+                FlPiP().disable();
+              });
             },
             child: const Text('Enable PiP')),
         ElevatedButton(

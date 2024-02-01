@@ -14,6 +14,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     private var flutterController: FlutterViewController?
 
     private var createNewEngine: Bool = false
+    private var isEnable: Bool = false
     private var enabledWhenBackground: Bool = false
     private var rootWindow: UIWindow?
 
@@ -37,18 +38,20 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "enable":
-            if isAvailable() {
+            if isAvailable(), !isEnable {
                 enableArgs = call.arguments as! [String: Any?]
                 createNewEngine = enableArgs["createNewEngine"] as! Bool
                 enabledWhenBackground = enableArgs["enabledWhenBackground"] as! Bool
                 rootWindow = windows()?.filter { window in
                     window.isKeyWindow
                 }.first
-                result(enable())
+                isEnable = enable()
+                result(isEnable)
                 return
             }
             result(false)
         case "disable":
+            isEnable = false
             dispose()
             disposeEngine()
             enableArgs = [:]
@@ -130,8 +133,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
 
             if #available(iOS 14.2, *) {
                 pipController!.canStartPictureInPictureAutomaticallyFromInline = true
-            } else {}
-
+            }
             player!.play()
             rootWindow!.rootViewController?.view?.layer.addSublayer(playerLayer!)
             if !enabledWhenBackground {
@@ -167,12 +169,31 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     }
 
     public func dispose() {
+        if createNewEngine {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [self] in
+                disposeEngine()
+            }
+        } else if rootWindow != nil {
+            let rect = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.height)
+            let firstWindow = UIApplication.shared.windows.first
+            if firstWindow!.rootViewController is FlutterViewController {
+                let flController = (firstWindow!.rootViewController as! FlutterViewController)
+                let engine = flController.engine!
+                engine.viewController = nil
+                let newController = FlutterViewController(engine: flController.engine!, nibName: flController.nibName, bundle: flController.nibBundle)
+                flController.dismiss(animated: true)
+                firstWindow!.rootViewController = nil
+                newController.view.frame = rect
+                rootWindow?.rootViewController = newController
+            }
+        }
         pipController?.stopPictureInPicture()
         pipController = nil
         playerLayer?.removeFromSuperlayer()
         playerLayer = nil
         player?.replaceCurrentItem(with: nil)
         player = nil
+        channel.invokeMethod("onPiPStatus", arguments: 1)
     }
 
     public func disposeEngine() {
@@ -209,54 +230,24 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     }
 
     public func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-        if createNewEngine {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [self] in
-                disposeEngine()
-            }
-        } else if rootWindow != nil {
-            let rect = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.height)
-            let firstWindow = UIApplication.shared.windows.first
-            if firstWindow!.rootViewController is FlutterViewController {
-                let flController = (firstWindow!.rootViewController as! FlutterViewController)
-                let engine = flController.engine!
-                engine.viewController = nil
-                let newController = FlutterViewController(engine: flController.engine!, nibName: flController.nibName, bundle: flController.nibBundle)
-                flController.dismiss(animated: true)
-                firstWindow!.rootViewController = nil
-                newController.view.frame = rect
-                rootWindow?.rootViewController = newController
-            }
-        }
+        isEnable = false
         dispose()
-        channel.invokeMethod("onPiPStatus", arguments: 1)
     }
-
-    private var backgroundTask: UIBackgroundTaskIdentifier?
 
     public func applicationDidEnterBackground(_ application: UIApplication) {
         URLSessionConfiguration.background(withIdentifier: "")
-        backgroundTask = UIApplication.shared.beginBackgroundTask(expirationHandler: {
-            if self.enabledWhenBackground {
-                self.pipController!.startPictureInPicture()
-            }
-        })
-    }
-
-    public func applicationWillEnterForeground(_ application: UIApplication) {
-        if backgroundTask != nil {
-            UIApplication.shared.endBackgroundTask(backgroundTask!)
-            backgroundTask = UIBackgroundTaskIdentifier.invalid
-            backgroundTask = nil
+        if enabledWhenBackground {
+            pipController?.startPictureInPicture()
         }
     }
 
     public func windows() -> [UIWindow]? {
         return UIApplication.shared.windows
-//        if #available(iOS 13.0, *) {
-//            let windowScene = (UIApplication.shared.connectedScenes.first as? UIWindowScene)
-//            return windowScene?.windows
-//        } else {
-//            return UIApplication.shared.windows
-//        }
+        //        if #available(iOS 13.0, *) {
+        //            let windowScene = (UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        //            return windowScene?.windows
+        //        } else {
+        //            return UIApplication.shared.windows
+        //        }
     }
 }

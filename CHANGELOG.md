@@ -1,3 +1,7 @@
+## 1.1.0
+
+* Fix some issues
+
 ## 1.0.0
 
 * Removed `FlPiP().enableWithEngine`

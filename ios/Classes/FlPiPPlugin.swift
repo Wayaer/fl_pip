@@ -9,7 +9,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     private var player: AVPlayer?
     private var pipController: AVPictureInPictureController?
 
-    private var engineGroup: FlutterEngineGroup?
+    private var engineGroup = FlutterEngineGroup(name: "pip.flutter", project: nil)
     private var flPiPEngine: FlutterEngine?
     private var flutterController: FlutterViewController?
 
@@ -35,6 +35,8 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
 
     private var enableArgs: [String: Any?] = [:]
 
+    private var isCallDisable: Bool = false
+
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "enable":
@@ -51,9 +53,8 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
             }
             result(false)
         case "disable":
-            isEnable = false
+            isCallDisable = true
             dispose()
-            disposeEngine()
             enableArgs = [:]
             setPiPStatus(1)
             result(true)
@@ -89,7 +90,6 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
             print("FlPiP error : AVAudioSession.sharedInstance()")
             return false
         }
-        dispose()
         let path = enableArgs["path"] as! String
         let packageName = enableArgs["packageName"] as? String
         let assetPath: String
@@ -137,6 +137,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
             rootWindow!.rootViewController?.view?.layer.addSublayer(playerLayer!)
             if !enabledWhenBackground {
                 DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.4) {
+                    print("pipController!.startPictureInPicture")
                     self.pipController!.startPictureInPicture()
                 }
             }
@@ -146,11 +147,10 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     }
 
     func createFlutterEngine() {
-        disposeEngine()
         if createNewEngine {
-            engineGroup = FlutterEngineGroup(name: "pip.flutter", project: nil)
+            print("createFlutterEngine")
             let rootController = (rootWindow?.rootViewController as! FlutterViewController)
-            flPiPEngine = engineGroup!.makeEngine(withEntrypoint: "pipMain", libraryURI: nil)
+            flPiPEngine = engineGroup.makeEngine(withEntrypoint: "pipMain", libraryURI: nil)
             flutterController = FlutterViewController(
                 engine: flPiPEngine!,
                 nibName: rootController.nibName,
@@ -198,15 +198,14 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
 
     public func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
         print("pip stop")
-        isEnable = false
-        dispose()
+        if !isCallDisable {
+            dispose()
+        }
     }
 
     public func dispose() {
         if createNewEngine {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [self] in
-                disposeEngine()
-            }
+            disposeEngine()
         } else if rootWindow != nil {
             let rect = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.height)
             let firstWindow = UIApplication.shared.windows.first
@@ -228,15 +227,18 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         player?.replaceCurrentItem(with: nil)
         player = nil
         setPiPStatus(1)
+        isCallDisable = false
+        isEnable = false
     }
 
     public func disposeEngine() {
-        flutterController?.removeFromParent()
-        flutterController?.engine?.destroyContext()
-        flPiPEngine?.viewController?.dismiss(animated: false)
-        flPiPEngine = nil
-        engineGroup = nil
-        flutterController = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [self] in
+            flutterController?.removeFromParent()
+            flutterController?.engine?.destroyContext()
+            flPiPEngine?.viewController?.dismiss(animated: false)
+            flPiPEngine = nil
+            flutterController = nil
+        }
     }
 
     public func applicationWillEnterForeground(_ application: UIApplication) {

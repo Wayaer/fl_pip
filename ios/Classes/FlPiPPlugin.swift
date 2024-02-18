@@ -55,17 +55,16 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
             dispose()
             disposeEngine()
             enableArgs = [:]
+            setPiPStatus(1)
             result(true)
         case "isActive":
+            var map = ["createNewEngine": createNewEngine, "enabledWhenBackground": enabledWhenBackground] as [String: Any]
             if isAvailable() {
-                if pipController?.isPictureInPictureActive ?? false {
-                    result(0)
-                } else {
-                    result(1)
-                }
+                map["status"] = (pipController?.isPictureInPictureActive ?? false) ? 0 : 1
             } else {
-                result(2)
+                map["status"] = 2
             }
+            result(map)
         case "toggle":
             let value = call.arguments as! Bool
             if value {
@@ -168,6 +167,41 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         }
     }
 
+    public func isAvailable() -> Bool {
+        AVPictureInPictureController.isPictureInPictureSupported()
+    }
+
+    public func pictureInPictureControllerDidStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
+        print("pip start")
+        if let firstWindow = UIApplication.shared.windows.first, rootWindow != nil {
+            let rect = firstWindow.rootViewController?.view.frame ?? CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.height)
+            if createNewEngine {
+                flutterController?.view.frame = rect
+                firstWindow.rootViewController = flutterController
+            } else {
+                let rootController = rootWindow!.rootViewController
+                let flController = (rootController as! FlutterViewController)
+                let engine = flController.engine!
+                engine.viewController = nil
+                let newController = FlutterViewController(engine: engine, nibName: flController.nibName, bundle: flController.nibBundle)
+                flController.dismiss(animated: true)
+                newController.view.frame = rect
+                firstWindow.rootViewController = newController
+            }
+            setPiPStatus(0)
+        }
+    }
+
+    func setPiPStatus(_ int: Int) {
+        channel.invokeMethod("onPiPStatus", arguments: ["createNewEngine": createNewEngine, "enabledWhenBackground": enabledWhenBackground, "status": int])
+    }
+
+    public func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
+        print("pip stop")
+        isEnable = false
+        dispose()
+    }
+
     public func dispose() {
         if createNewEngine {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [self] in
@@ -193,7 +227,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         playerLayer = nil
         player?.replaceCurrentItem(with: nil)
         player = nil
-        channel.invokeMethod("onPiPStatus", arguments: 1)
+        setPiPStatus(1)
     }
 
     public func disposeEngine() {
@@ -205,38 +239,18 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         flutterController = nil
     }
 
-    public func isAvailable() -> Bool {
-        AVPictureInPictureController.isPictureInPictureSupported()
-    }
-
-    public func pictureInPictureControllerDidStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-        if let firstWindow = UIApplication.shared.windows.first, rootWindow != nil {
-            let rect = firstWindow.rootViewController?.view.frame ?? CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.height)
-            if createNewEngine, flutterController != nil {
-                flutterController!.view.frame = rect
-                firstWindow.rootViewController = flutterController
-            } else if rootWindow != nil {
-                let rootController = rootWindow!.rootViewController
-                let flController = (rootController as! FlutterViewController)
-                let engine = flController.engine!
-                engine.viewController = nil
-                let newController = FlutterViewController(engine: engine, nibName: flController.nibName, bundle: flController.nibBundle)
-                flController.dismiss(animated: true)
-                newController.view.frame = rect
-                firstWindow.rootViewController = newController
-            }
-            channel.invokeMethod("onPiPStatus", arguments: 0)
+    public func applicationWillEnterForeground(_ application: UIApplication) {
+        if enabledWhenBackground {
+            print("app will enter foreground")
         }
     }
 
-    public func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-        isEnable = false
-        dispose()
-    }
-
     public func applicationDidEnterBackground(_ application: UIApplication) {
-        URLSessionConfiguration.background(withIdentifier: "")
         if enabledWhenBackground {
+            print("app enter background")
+            if createNewEngine {
+                createFlutterEngine()
+            }
             pipController?.startPictureInPicture()
         }
     }

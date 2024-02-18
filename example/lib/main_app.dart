@@ -12,21 +12,26 @@ class MainApp extends StatefulWidget {
 class _MainAppState extends State<MainApp> {
   @override
   Widget build(BuildContext context) => Scaffold(
-          body: Center(
+          body: SingleChildScrollView(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
+        SizedBox(width: double.infinity, height: context.statusBarHeight),
         CountDown(
-            onChanged: (int i) {},
             periodic: 1,
             duration: const Duration(seconds: 500),
             builder: (int i) => Padding(
                 padding:
-                    const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                    const EdgeInsets.symmetric(vertical: 3, horizontal: 12),
                 child: Text(i.toString()))),
-        PiPBuilder(builder: (PiPStatus status) {
-          switch (status) {
+        PiPBuilder(builder: (PiPStatusInfo? statusInfo) {
+          switch (statusInfo?.status) {
             case PiPStatus.enabled:
               return Column(children: [
                 const Text('PiPStatus enabled'),
+                Text('isCreateNewEngine: ${statusInfo!.isCreateNewEngine}',
+                    style: const TextStyle(fontSize: 10)),
+                Text(
+                    'isEnabledWhenBackground: ${statusInfo.isEnabledWhenBackground}',
+                    style: const TextStyle(fontSize: 10)),
                 ElevatedButton(
                     onPressed: () {
                       FlPiP().disable();
@@ -37,6 +42,8 @@ class _MainAppState extends State<MainApp> {
               return builderDisabled;
             case PiPStatus.unavailable:
               return buildUnavailable;
+            case null:
+              return builderDisabled;
           }
         }),
         ElevatedButton(
@@ -84,7 +91,7 @@ class _MainAppState extends State<MainApp> {
                       enabledWhenBackground: true,
                       aspectRatio: Rational.maxLandscape()));
             },
-            child: const Text('Enable PiP\nenabledWhenBackground',
+            child: const Text('Enabled when background',
                 textAlign: TextAlign.center)),
         ElevatedButton(
             onPressed: () {
@@ -95,7 +102,7 @@ class _MainAppState extends State<MainApp> {
                       path: 'assets/landscape.mp4',
                       packageName: null));
             },
-            child: const Text('Enable PiP with Engine')),
+            child: const Text('Create new engine')),
         ElevatedButton(
             onPressed: () {
               FlPiP().enable(
@@ -107,7 +114,7 @@ class _MainAppState extends State<MainApp> {
                       path: 'assets/landscape.mp4',
                       packageName: null));
             },
-            child: const Text('Enable PiP with Engine\nenabledWhenBackground',
+            child: const Text('Create new engine and enabled when background',
                 textAlign: TextAlign.center)),
       ]);
 

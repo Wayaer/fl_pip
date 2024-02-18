@@ -59,8 +59,16 @@ open class FlPiPActivity : FlutterActivity() {
 
         companion object {
             private lateinit var channel: MethodChannel
+            private var createNewEngine = false
+            private var enabledWhenBackground = false
             fun setPiPStatus(int: Int) {
-                channel.invokeMethod("onPiPStatus", int)
+                channel.invokeMethod(
+                    "onPiPStatus", mapOf(
+                        "createNewEngine" to createNewEngine,
+                        "enabledWhenBackground" to enabledWhenBackground,
+                        "status" to int,
+                    )
+                )
             }
         }
 
@@ -76,8 +84,6 @@ open class FlPiPActivity : FlutterActivity() {
         private var flutterView: FlutterView? = null
         private var windowManager: WindowManager? = null
         private var rootView: FrameLayout? = null
-        private var createNewEngine = false
-        private var enabledWhenBackground = false
         private var isEnabled = false
 
 
@@ -106,20 +112,28 @@ open class FlPiPActivity : FlutterActivity() {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && activity.isInPictureInPictureMode) {
                         launchApp()
                     }
+                    disposeEngine()
+                    setPiPStatus(1)
                     result.success(true)
                 }
 
                 "isActive" -> {
+                    val map = mutableMapOf<String, Any>(
+                        "createNewEngine" to createNewEngine,
+                        "enabledWhenBackground" to enabledWhenBackground
+                    )
                     val isAvailable = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                         activity.packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
                     } else {
                         false
                     }
                     if (isAvailable) {
-                        result.success(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && activity.isInPictureInPictureMode) 0 else 1)
+                        map["status"] =
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && activity.isInPictureInPictureMode) 0 else 1
                     } else {
-                        result.success(2)
+                        map["status"] = 2
                     }
+                    result.success(map)
                 }
 
                 "available" -> result.success(

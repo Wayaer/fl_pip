@@ -4,10 +4,16 @@
 
 ## The picture-in-picture mode is implemented in native ios and android to display flutter's view
 
+##  * 目前在ios上遇到了一个问题，当app在后台的时候，FlutterUi停止运行或者画中画直接黑屏，猜测可能是由于ios冻结app导致，本人目前没有好的解决办法，如果你有想法，请提交pr
+
+##  * At present, there is a problem in ios, when the app is in the background, FlutterUi will stop running or black screen directly, which may be caused by ios freezing the app, I have no good solution at present, if you have ideas, please submit PR
+
 ## Use configuration
 
-- ios 配置 : `Signing & Capabilities` -> `Capability` 添加 `BackgroundModes` 勾选 `Audio,AirPlay,And Picture in Picture`
-- ios configuration : `Signing & Capabilities` -> `Capability` Add `BackgroundModes` check `Audio,AirPlay,And Picture in Picture`
+- ios 配置 : `Signing & Capabilities` -> `Capability` 添加 `BackgroundModes`
+  勾选 `Audio,AirPlay,And Picture in Picture`
+- ios configuration : `Signing & Capabilities` -> `Capability` Add `BackgroundModes`
+  check `Audio,AirPlay,And Picture in Picture`
 
 - android 配置 : `android/app/src/main/${your package name}/MainActivity` 修改 MainActivity 继承,
 - android configuration : `android/app/src/main/${your package name}/MainActivity`,
@@ -30,12 +36,14 @@ class MainActivity extends FlPiPActivity {
 
 ```
 
-android AndroidManifest file `android/app/src/main/AndroidManifest.xml`, add ` android:supportsPictureInPicture="true"`
+android AndroidManifest file `android/app/src/main/AndroidManifest.xml`,
+add ` android:supportsPictureInPicture="true"`
 
 ```xml
 
 <application android:label="FlPiP">
-    <activity android:name=".MainActivity" android:launchMode="singleTop" android:supportsPictureInPicture="true" />
+    <activity android:name=".MainActivity" android:launchMode="singleTop"
+        android:supportsPictureInPicture="true" />
 </application>
 ```
 

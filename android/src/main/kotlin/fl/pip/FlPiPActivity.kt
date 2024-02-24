@@ -1,4 +1,4 @@
-package com.fl.pip
+package fl.pip
 
 import android.app.Activity
 import android.app.ActivityManager
@@ -59,8 +59,16 @@ open class FlPiPActivity : FlutterActivity() {
 
         companion object {
             private lateinit var channel: MethodChannel
+            private var createNewEngine = false
+            private var enabledWhenBackground = false
             fun setPiPStatus(int: Int) {
-                channel.invokeMethod("onPiPStatus", int)
+                channel.invokeMethod(
+                    "onPiPStatus", mapOf(
+                        "createNewEngine" to createNewEngine,
+                        "enabledWhenBackground" to enabledWhenBackground,
+                        "status" to int,
+                    )
+                )
             }
         }
 
@@ -76,8 +84,8 @@ open class FlPiPActivity : FlutterActivity() {
         private var flutterView: FlutterView? = null
         private var windowManager: WindowManager? = null
         private var rootView: FrameLayout? = null
-        private var createNewEngine = false
-        private var enabledWhenBackground = false
+        private var isEnabled = false
+
 
         override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
             pluginBinding = binding
@@ -99,21 +107,33 @@ open class FlPiPActivity : FlutterActivity() {
                 }
 
                 "disable" -> {
-                    launchApp()
+                    createNewEngine = false
+                    enabledWhenBackground = false
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && activity.isInPictureInPictureMode) {
+                        launchApp()
+                    }
+                    disposeEngine()
+                    setPiPStatus(1)
                     result.success(true)
                 }
 
                 "isActive" -> {
+                    val map = mutableMapOf<String, Any>(
+                        "createNewEngine" to createNewEngine,
+                        "enabledWhenBackground" to enabledWhenBackground
+                    )
                     val isAvailable = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                         activity.packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
                     } else {
                         false
                     }
                     if (isAvailable) {
-                        result.success(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && activity.isInPictureInPictureMode) 0 else 1)
+                        map["status"] =
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && activity.isInPictureInPictureMode) 0 else 1
                     } else {
-                        result.success(2)
+                        map["status"] = 2
                     }
+                    result.success(map)
                 }
 
                 "available" -> result.success(
@@ -157,16 +177,19 @@ open class FlPiPActivity : FlutterActivity() {
                 activity.packageManager.getLaunchIntentForPackage(activity.applicationContext.packageName)
             intent?.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             activity.startActivity(intent)
+            isEnabled = false
         }
 
 
         private fun enable(): Boolean {
+            if (isEnabled) return false
             createNewEngine = enableArgs["createNewEngine"] as Boolean
-            return if (createNewEngine) {
+            val isEnabled = if (createNewEngine) {
                 enableWM(activity)
             } else {
                 enablePiP(activity)
             }
+            return isEnabled
         }
 
 
@@ -323,6 +346,7 @@ open class FlPiPActivity : FlutterActivity() {
                 FlutterEngineCache.getInstance().remove(engineId)
             }
             engine = null
+            isEnabled = false
         }
 
         private fun dp2px(value: Int): Int {

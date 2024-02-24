@@ -4,9 +4,9 @@
 
 ## The picture-in-picture mode is implemented in native ios and android to display flutter's view
 
-###  * 目前在ios上遇到了一个问题，当app在后台的时候，FlutterUi停止运行或者画中画直接黑屏，猜测可能是由于ios冻结app导致，本人目前没有好的解决办法，如果你有想法，请提交pr
+###    * 目前在ios上遇到了一个问题，当app在后台的时候，FlutterUi停止运行或者画中画直接黑屏，猜测可能是由于ios冻结app导致，本人目前没有好的解决办法，如果你有想法，请提交pr
 
-###  * At present, there is a problem in ios, when the app is in the background, FlutterUi will stop running or black screen directly, which may be caused by ios freezing the app, I have no good solution at present, if you have ideas, please submit PR
+###    * At present, there is a problem in ios, when the app is in the background, FlutterUi will stop running or black screen directly, which may be caused by ios freezing the app, I have no good solution at present, if you have ideas, please submit PR
 
 ## Use configuration
 

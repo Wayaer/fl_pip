@@ -1,4 +1,4 @@
-package com.fl.pip
+package fl.pip
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 

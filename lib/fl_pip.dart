@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-typedef PiPBuilderCallback = Widget Function(PiPStatus status);
+typedef PiPBuilderCallback = Widget Function(PiPStatusInfo? status);
 
 class PiPBuilder extends StatefulWidget {
   const PiPBuilder({
@@ -24,9 +24,12 @@ class _PiPBuilderState extends State<PiPBuilder> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final value = await FlPiP().isAvailable;
-      if (!value) return;
-      FlPiP().status.addListener(listener);
-      await FlPiP().isActive;
+      if (value) {
+        FlPiP().status.addListener(listener);
+        await FlPiP().isActive;
+      } else {
+        FlPiP().status.value = PiPStatusInfo(status: PiPStatus.unavailable);
+      }
     });
   }
 
@@ -55,6 +58,27 @@ enum PiPStatus {
   unavailable
 }
 
+class PiPStatusInfo {
+  PiPStatusInfo(
+      {required this.status,
+      this.isCreateNewEngine = false,
+      this.isEnabledWhenBackground = false});
+
+  PiPStatusInfo.fromMap(Map<dynamic, dynamic> map)
+      : status = PiPStatus.values[map['status'] as int],
+        isCreateNewEngine = map['createNewEngine'] as bool,
+        isEnabledWhenBackground = map['enabledWhenBackground'] as bool;
+
+  ///  pip status
+  final PiPStatus status;
+
+  /// is create new engine
+  final bool isCreateNewEngine;
+
+  /// is enabled when background
+  final bool isEnabledWhenBackground;
+}
+
 const _channel = MethodChannel('fl_pip');
 
 class FlPiP {
@@ -66,13 +90,13 @@ class FlPiP {
     _channel.setMethodCallHandler((call) async {
       switch (call.method) {
         case 'onPiPStatus':
-          status.value = PiPStatus.values[call.arguments as int];
+          status.value = PiPStatusInfo.fromMap(call.arguments);
           break;
       }
     });
   }
 
-  final ValueNotifier<PiPStatus> status = ValueNotifier(PiPStatus.disabled);
+  final ValueNotifier<PiPStatusInfo?> status = ValueNotifier(null);
 
   /// 开启画中画
   /// enable picture-in-picture
@@ -104,9 +128,11 @@ class FlPiP {
 
   /// 画中画状态
   /// Picture-in-picture window state
-  Future<PiPStatus> get isActive async {
-    final int? state = await _channel.invokeMethod<int>('isActive');
-    status.value = PiPStatus.values[state ?? 2];
+  Future<PiPStatusInfo?> get isActive async {
+    final map = await _channel.invokeMethod<Map<dynamic, dynamic>>('isActive');
+    if (map != null) {
+      status.value = PiPStatusInfo.fromMap(map);
+    }
     return status.value;
   }
 

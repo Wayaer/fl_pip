@@ -1,5 +1,4 @@
 package fl.pip.example
 
-import com.fl.pip.FlPiPActivity
-
+import fl.pip.FlPiPActivity
 class MainActivity : FlPiPActivity() {}

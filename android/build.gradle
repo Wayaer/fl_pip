@@ -1,4 +1,4 @@
-group 'com.fl.pip'
+group 'fl.pip'
 version '1.0'
 
 buildscript {
@@ -28,7 +28,7 @@ android {
     compileSdkVersion 33
 
     if (project.android.hasProperty("namespace")) {
-        namespace 'com.fl.pip'
+        namespace 'fl.pip'
     }
 
     sourceSets {

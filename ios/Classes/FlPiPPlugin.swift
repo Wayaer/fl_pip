@@ -137,7 +137,6 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
             rootWindow!.rootViewController?.view?.layer.addSublayer(playerLayer!)
             if !enabledWhenBackground {
                 DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.4) {
-                    print("pipController!.startPictureInPicture")
                     self.pipController!.startPictureInPicture()
                 }
             }
@@ -148,7 +147,6 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
 
     func createFlutterEngine() {
         if createNewEngine {
-            print("createFlutterEngine")
             let rootController = (rootWindow?.rootViewController as! FlutterViewController)
             flPiPEngine = engineGroup.makeEngine(withEntrypoint: "pipMain", libraryURI: nil)
             flutterController = FlutterViewController(
@@ -172,7 +170,6 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     }
 
     public func pictureInPictureControllerDidStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-        print("pip start")
         if let firstWindow = UIApplication.shared.windows.first, rootWindow != nil {
             let rect = firstWindow.rootViewController?.view.frame ?? CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.height)
             if createNewEngine {
@@ -197,15 +194,18 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     }
 
     public func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-        print("pip stop")
         if !isCallDisable {
             dispose()
         }
     }
 
     public func dispose() {
+        pipController?.stopPictureInPicture()
         if createNewEngine {
-            disposeEngine()
+            flutterController?.removeFromParent()
+            flPiPEngine?.viewController?.dismiss(animated: false)
+            flutterController = nil
+            flPiPEngine = nil
         } else if rootWindow != nil {
             let rect = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.height)
             let firstWindow = UIApplication.shared.windows.first
@@ -220,36 +220,26 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
                 rootWindow?.rootViewController = newController
             }
         }
-        pipController?.stopPictureInPicture()
+        isCallDisable = false
         pipController = nil
         playerLayer?.removeFromSuperlayer()
         playerLayer = nil
         player?.replaceCurrentItem(with: nil)
         player = nil
         setPiPStatus(1)
-        isCallDisable = false
         isEnable = false
-    }
-
-    public func disposeEngine() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [self] in
-            flutterController?.removeFromParent()
-            flutterController?.engine?.destroyContext()
-            flPiPEngine?.viewController?.dismiss(animated: false)
-            flPiPEngine = nil
-            flutterController = nil
-        }
+        createNewEngine = false
+        enabledWhenBackground = false
     }
 
     public func applicationWillEnterForeground(_ application: UIApplication) {
         if enabledWhenBackground {
-            print("app will enter foreground")
+            // print("app will enter foreground")
         }
     }
 
     public func applicationDidEnterBackground(_ application: UIApplication) {
         if enabledWhenBackground {
-            print("app enter background")
             if createNewEngine {
                 createFlutterEngine()
             }

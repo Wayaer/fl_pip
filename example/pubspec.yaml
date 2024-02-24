@@ -13,7 +13,7 @@ dependencies:
   fl_pip:
     path: ../
   cupertino_icons: ^1.0.6
-  flutter_waya: ^8.6.4
+  flutter_waya: ^8.7.2
 
 dev_dependencies:
   flutter_lints: ^3.0.1

@@ -1,4 +1,4 @@
-package com.fl.pip.example
+package fl.pip.example
 
 import com.fl.pip.FlPiPActivity
 

@@ -1,4 +1,4 @@
-package com.fl.pip
+package fl.pip
 
 import android.app.Activity
 import android.app.ActivityManager
@@ -107,8 +107,8 @@ open class FlPiPActivity : FlutterActivity() {
                 }
 
                 "disable" -> {
+                    createNewEngine = false
                     enabledWhenBackground = false
-                    isEnabled = false
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && activity.isInPictureInPictureMode) {
                         launchApp()
                     }

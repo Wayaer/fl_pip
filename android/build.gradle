@@ -1,8 +1,8 @@
-group 'com.fl.pip'
+group 'fl.pip'
 version '1.0'
 
 buildscript {
-    ext.kotlin_version = '1.7.10'
+    ext.kotlin_version = '1.8.0'
     repositories {
         google()
         mavenCentral()
@@ -28,7 +28,7 @@ android {
     compileSdkVersion 33
 
     if (project.android.hasProperty("namespace")) {
-        namespace 'com.fl.pip'
+        namespace 'fl.pip'
     }
 
     sourceSets {

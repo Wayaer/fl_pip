@@ -1,3 +1,9 @@
+## 3.0.0
+
+* Fix the error in Android when calling plug-in methods in Pip mode
+* Modify some configuration parameters of Android and iOS
+* Modified examples and some documents
+
 ## 2.0.0
 
 * Add the `PiPStatusInfo` class and add the `isCreateNewEngine` and `isEnabledWhenBackground` for

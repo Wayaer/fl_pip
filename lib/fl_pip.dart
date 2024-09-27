@@ -161,8 +161,7 @@ enum AppState {
 
 class FlPiPConfig {
   const FlPiPConfig(
-      {required this.path,
-      this.enabledWhenBackground = false,
+      {this.enabledWhenBackground = false,
       this.createNewEngine = false,
       this.packageName,
       this.rect});
@@ -173,14 +172,6 @@ class FlPiPConfig {
   ///  android The size and position of the system popup,default [left:width/2,top:height/2,width:300,height:300]
   final Rect? rect;
 
-  final String path;
-
-  /// 资源地址的 packageName
-  /// Set packageName to the asset address
-  /// 如果使用你自己项目的资源文件 请设置[packageName]为null
-  /// If using your own project's resource files, set [packageName] to null
-  final String? packageName;
-
   /// Enabled when the app is in the background
   /// 当app处于后台时启用
   final bool enabledWhenBackground;
@@ -188,6 +179,12 @@ class FlPiPConfig {
   /// 创建新的 engine
   /// create new engine
   final bool createNewEngine;
+
+  /// 资源地址的 packageName
+  /// Set packageName to the asset address
+  /// 如果使用你自己项目的资源文件 请设置[packageName]为null
+  /// If using your own project's resource files, set [packageName] to null
+  final String? packageName;
 
   Map<String, dynamic> toMap() => {
         'left': rect?.left,
@@ -197,7 +194,6 @@ class FlPiPConfig {
         'packageName': packageName,
         'enabledWhenBackground': enabledWhenBackground,
         'createNewEngine': createNewEngine,
-        'path': path
       };
 }
 
@@ -208,9 +204,9 @@ class FlPiPAndroidConfig extends FlPiPConfig {
       {
       /// Android 悬浮框右上角的关闭按钮的图片地址
       /// Android The image address of the Close button in the upper right corner of the floating
-      super.path = 'assets/close.png',
-      super.packageName = 'fl_pip',
+      this.closeIconPath,
       this.aspectRatio = const Rational.square(),
+      super.packageName,
       super.enabledWhenBackground = false,
       super.createNewEngine = false,
       super.rect});
@@ -219,8 +215,16 @@ class FlPiPAndroidConfig extends FlPiPConfig {
   /// android picture in picture window width-height ratio
   final Rational aspectRatio;
 
+  /// 当createNewEngine 等于true时，在android上实际上是创建了一个windowManager，而不是PIP,这个是右上角关闭按钮的图片路径
+  /// When [createNewEngine]= true, a windowManager is actually created on Android, not PIP. This is the image path of the close button in the upper right corner
+  final String? closeIconPath;
+
   @override
-  Map<String, dynamic> toMap() => {...aspectRatio.toMap(), ...super.toMap()};
+  Map<String, dynamic> toMap() => {
+        ...aspectRatio.toMap(),
+        ...super.toMap(),
+        'closeIconPath': closeIconPath,
+      };
 
   String toHex(Color color) =>
       '#${color.alpha.toRadixString(16).padLeft(2, '0')}'
@@ -236,7 +240,7 @@ class FlPiPiOSConfig extends FlPiPConfig {
       {
       /// 视频路径 用于修修改画中画尺寸
       /// The video [path] is used to modify the size of the picture in picture
-      super.path = 'assets/landscape.mp4',
+      this.videoPath = 'assets/landscape.mp4',
       super.packageName = 'fl_pip',
       this.enableControls = false,
       this.enablePlayback = false,
@@ -252,9 +256,14 @@ class FlPiPiOSConfig extends FlPiPConfig {
   /// Turn on playback speed
   final bool enablePlayback;
 
+  /// Video address used to control pip width and height
+  final String videoPath;
+
   @override
   Map<String, dynamic> toMap() => {
         ...super.toMap(),
+        'videoPath': videoPath,
+        'packageName': packageName,
         'enableControls': enableControls,
         'enablePlayback': enablePlayback,
       };

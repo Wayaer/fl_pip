@@ -90,17 +90,17 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
             print("FlPiP error : AVAudioSession.sharedInstance()")
             return false
         }
-        let path = enableArgs["path"] as! String
+        let videoPath = enableArgs["videoPath"] as! String
         let packageName = enableArgs["packageName"] as? String
         let assetPath: String
         if packageName != nil {
-            assetPath = registrar.lookupKey(forAsset: path, fromPackage: packageName!)
+            assetPath = registrar.lookupKey(forAsset: videoPath, fromPackage: packageName!)
         } else {
-            assetPath = registrar.lookupKey(forAsset: path)
+            assetPath = registrar.lookupKey(forAsset: videoPath)
         }
         let bundlePath = Bundle.main.path(forResource: assetPath, ofType: nil)
         if bundlePath == nil {
-            print("FlPiP error : Unable to load video resources, \(path) in \(packageName ?? "current")")
+            print("FlPiP error : Unable to load video resources, \(videoPath) in \(packageName ?? "current")")
             return false
         }
         if isAvailable() {
@@ -108,7 +108,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
                 print("FlPiP error : rootWindow is null")
                 return false
             }
-            createFlutterEngine()
+            getCreateNewEngine()
             playerLayer = AVPlayerLayer()
             let x = enableArgs["left"] as? CGFloat ?? UIScreen.main.bounds.size.width/2
             let y = enableArgs["top"] as? CGFloat ?? UIScreen.main.bounds.size.height/2
@@ -145,7 +145,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
         return false
     }
 
-    func createFlutterEngine() {
+    func getCreateNewEngine() {
         if createNewEngine {
             let rootController = (rootWindow?.rootViewController as! FlutterViewController)
             flPiPEngine = engineGroup.makeEngine(withEntrypoint: "pipMain", libraryURI: nil)

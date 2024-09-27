@@ -46,17 +46,12 @@ class PiPHelper private constructor() {
         }
     }
 
-
     private var createNewEngine = false
     private var enabledWhenBackground = false
-
-
     private var context: Context? = null
     private var activity: FlutterActivity? = null
     private var pluginBinding: FlutterPlugin.FlutterPluginBinding? = null
-
     private var enableArgs: Map<*, *> = mutableMapOf<String, Any?>()
-
     private var engineId = "pip.flutter"
     private var engine: FlutterEngine? = null
     private var flutterView: FlutterView? = null

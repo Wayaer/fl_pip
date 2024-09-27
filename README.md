@@ -99,6 +99,6 @@ void pipMain() {
 
 ## Display effect
 
-| android                                                                                        | ios                                                                                       |
-|------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| <img src="https://github.com/Wayaer/fl_pip/raw/main/example/assets/android.gif" width="100%"/> | <img src="https://github.com/Wayaer/fl_pip/raw/main/example/assets/ios.gif" width="75%"/> |
+| android                                                                                          | ios                                                                                             |
+|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| <video src="https://github.com/Wayaer/fl_pip/raw/main/example/assets/android.mp4" width="100%"/> | <video src="https://github.com/Wayaer/fl_pip/raw/main/example/assets/android.mp4" width="75%"/> |

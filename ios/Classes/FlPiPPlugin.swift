@@ -84,22 +84,26 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
 
     func enable() -> Bool {
         do {
-            try AVAudioSession.sharedInstance().setCategory(.playAndRecord, options: .mixWithOthers)
+            try AVAudioSession.sharedInstance().setCategory(.playback, options: .mixWithOthers)
             try AVAudioSession.sharedInstance().setActive(true, options: [])
         } catch {
             print("FlPiP error : AVAudioSession.sharedInstance()")
             return false
         }
-        let videoPath = enableArgs["videoPath"] as! String
+        var videoPath = enableArgs["videoPath"] as! String
+        var audioPath = (enableArgs["audioPath"] as! String)
         let packageName = enableArgs["packageName"] as? String
-        let assetPath: String
         if packageName != nil {
-            assetPath = registrar.lookupKey(forAsset: videoPath, fromPackage: packageName!)
+            videoPath = registrar.lookupKey(forAsset: videoPath, fromPackage: packageName!)
+            audioPath = registrar.lookupKey(forAsset: audioPath, fromPackage: packageName!)
         } else {
-            assetPath = registrar.lookupKey(forAsset: videoPath)
+            videoPath = registrar.lookupKey(forAsset: videoPath)
+            audioPath = registrar.lookupKey(forAsset: audioPath)
         }
-        let bundlePath = Bundle.main.path(forResource: assetPath, ofType: nil)
-        if bundlePath == nil {
+        BackgroundAudioPlayer.shared.setAudioPath(path: audioPath)
+        BackgroundAudioPlayer.shared.startPlay()
+        let bundleVideoPath = Bundle.main.path(forResource: videoPath, ofType: nil)
+        if bundleVideoPath == nil {
             print("FlPiP error : Unable to load video resources, \(videoPath) in \(packageName ?? "current")")
             return false
         }
@@ -116,7 +120,7 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
             let height = enableArgs["height"] as? CGFloat ?? 1
 
             playerLayer!.frame = .init(x: x, y: y, width: width, height: height)
-            player = AVPlayer(playerItem: AVPlayerItem(asset: AVURLAsset(url: URL(fileURLWithPath: bundlePath!))))
+            player = AVPlayer(playerItem: AVPlayerItem(asset: AVURLAsset(url: URL(fileURLWithPath: bundleVideoPath!))))
             playerLayer!.player = player
             player!.isMuted = true
             player!.allowsExternalPlayback = true
@@ -233,15 +237,17 @@ public class FlPiPPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerD
     }
 
     public func applicationWillEnterForeground(_ application: UIApplication) {
+        BackgroundAudioPlayer.shared.stopPlay()
         if enabledWhenBackground {
             // print("app will enter foreground")
         }
     }
 
     public func applicationDidEnterBackground(_ application: UIApplication) {
+        BackgroundAudioPlayer.shared.startPlay()
         if enabledWhenBackground {
             if createNewEngine {
-                createFlutterEngine()
+                getCreateNewEngine()
             }
             pipController?.startPictureInPicture()
         }

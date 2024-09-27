@@ -241,6 +241,7 @@ class FlPiPiOSConfig extends FlPiPConfig {
       /// 视频路径 用于修修改画中画尺寸
       /// The video [path] is used to modify the size of the picture in picture
       this.videoPath = 'assets/landscape.mp4',
+      this.audioPath = 'assets/audio.mp3',
       super.packageName = 'fl_pip',
       this.enableControls = false,
       this.enablePlayback = false,
@@ -256,13 +257,19 @@ class FlPiPiOSConfig extends FlPiPConfig {
   /// Turn on playback speed
   final bool enablePlayback;
 
+  /// 视频路径 用于修修改画中画尺寸
+  /// The video [path] is used to modify the size of the picture in picture
   /// Video address used to control pip width and height
   final String videoPath;
+
+  /// Audio address
+  final String audioPath;
 
   @override
   Map<String, dynamic> toMap() => {
         ...super.toMap(),
         'videoPath': videoPath,
+        'audioPath': audioPath,
         'packageName': packageName,
         'enableControls': enableControls,
         'enablePlayback': enablePlayback,

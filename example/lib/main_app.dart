@@ -2,67 +2,65 @@ import 'package:fl_pip/fl_pip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_waya/flutter_waya.dart';
 
-class MainApp extends StatefulWidget {
+class MainApp extends StatelessWidget {
   const MainApp({super.key});
 
   @override
-  State<MainApp> createState() => _MainAppState();
-}
-
-class _MainAppState extends State<MainApp> {
-  @override
   Widget build(BuildContext context) => Scaffold(
-          body: SingleChildScrollView(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-        SizedBox(width: double.infinity, height: context.statusBarHeight),
-        CountDown(
-            periodic: 1,
-            duration: const Duration(seconds: 500),
-            builder: (int i) => Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 3, horizontal: 12),
-                child: Text(i.toString()))),
-        PiPBuilder(builder: (PiPStatusInfo? statusInfo) {
-          switch (statusInfo?.status) {
-            case PiPStatus.enabled:
-              return Column(children: [
-                const Text('PiPStatus enabled'),
-                Text('isCreateNewEngine: ${statusInfo!.isCreateNewEngine}',
-                    style: const TextStyle(fontSize: 10)),
-                Text(
-                    'isEnabledWhenBackground: ${statusInfo.isEnabledWhenBackground}',
-                    style: const TextStyle(fontSize: 10)),
-                ElevatedButton(
-                    onPressed: () {
-                      FlPiP().disable();
-                    },
-                    child: const Text('disable')),
-              ]);
-            case PiPStatus.disabled:
-              return builderDisabled;
-            case PiPStatus.unavailable:
-              return buildUnavailable;
-            case null:
-              return builderDisabled;
-          }
-        }),
-        ElevatedButton(
-            onPressed: () async {
-              final state = await FlPiP().isAvailable;
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: state
-                        ? const Text('PiP available')
-                        : const Text('PiP unavailable')));
-              }
-            },
-            child: const Text('PiPStatus isAvailable')),
-        ElevatedButton(
-            onPressed: () {
-              FlPiP().toggle(AppState.background);
-            },
-            child: const Text('toggle')),
-      ])));
+          body: SafeArea(
+        child: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+          SizedBox(width: double.infinity),
+          CountDown(
+              duration: const Duration(seconds: 500),
+              builder: (Duration duration, bool isRunning,
+                      VoidCallback startTiming) =>
+                  Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 3, horizontal: 12),
+                      child: Text(duration.inSeconds.toString()))),
+          PiPBuilder(builder: (PiPStatusInfo? statusInfo) {
+            switch (statusInfo?.status) {
+              case PiPStatus.enabled:
+                return Column(children: [
+                  const Text('PiPStatus enabled'),
+                  Text('isCreateNewEngine: ${statusInfo!.isCreateNewEngine}',
+                      style: const TextStyle(fontSize: 10)),
+                  Text(
+                      'isEnabledWhenBackground: ${statusInfo.isEnabledWhenBackground}',
+                      style: const TextStyle(fontSize: 10)),
+                  ElevatedButton(
+                      onPressed: () {
+                        FlPiP().disable();
+                      },
+                      child: const Text('disable')),
+                ]);
+              case PiPStatus.disabled:
+                return builderDisabled;
+              case PiPStatus.unavailable:
+                return buildUnavailable(context);
+              case null:
+                return builderDisabled;
+            }
+          }),
+          ElevatedButton(
+              onPressed: () async {
+                final state = await FlPiP().isAvailable;
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: state
+                          ? const Text('PiP available')
+                          : const Text('PiP unavailable')));
+                }
+              },
+              child: const Text('PiPStatus isAvailable')),
+          ElevatedButton(
+              onPressed: () {
+                FlPiP().toggle(AppState.background);
+              },
+              child: const Text('toggle')),
+        ])),
+      ));
 
   Widget get builderDisabled =>
       Column(mainAxisSize: MainAxisSize.min, children: [
@@ -118,10 +116,10 @@ class _MainAppState extends State<MainApp> {
                 textAlign: TextAlign.center)),
       ]);
 
-  Widget get buildUnavailable => ElevatedButton(
+  Widget buildUnavailable(BuildContext context) => ElevatedButton(
       onPressed: () async {
         final state = await FlPiP().isAvailable;
-        if (!mounted) return;
+        if (!context.mounted) return;
         if (!state) {
           ScaffoldMessenger.of(context)
               .showSnackBar(const SnackBar(content: Text('PiP unavailable')));
@@ -144,13 +142,13 @@ class _PiPMainAppState extends State<PiPMainApp> {
       body: Center(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
         CountDown(
-            onChanged: (int i) {},
-            periodic: 1,
             duration: const Duration(seconds: 500),
-            builder: (int i) => Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-                child: Text(i.toString()))),
+            builder: (Duration duration, bool isRunning,
+                    VoidCallback startTiming) =>
+                Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                    child: Text(duration.inSeconds.toString()))),
         const Text('The current pip is created using a new engine'),
         const SizedBox(
             height: 20,

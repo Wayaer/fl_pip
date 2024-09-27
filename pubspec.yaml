@@ -4,15 +4,15 @@ version: 2.0.0
 repository: https://github.com/Wayaer/fl_pip.git
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
-  flutter: ">=3.13.0"
+  sdk: '>=3.5.0 <4.0.0'
+  flutter: ">=3.24.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
 dev_dependencies:
-  flutter_lints: ^4.0.0
+  flutter_lints: ^5.0.0
 
 flutter:
   plugin:

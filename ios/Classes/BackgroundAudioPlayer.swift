@@ -20,9 +20,9 @@ class BackgroundAudioPlayer: NSObject {
                 }
                 audioPlayer!.volume = 0
                 audioPlayer!.numberOfLoops = -1
-                print("===成功")
+//                print("===成功")
             } else {
-                print("====\(path)")
+//                print("====\(path)")
             }
         } catch {
             print(error)

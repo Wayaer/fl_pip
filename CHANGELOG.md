@@ -1,8 +1,11 @@
 ## 3.0.0
 
+- Breaking changes , Please refer to the example
+
 * Fix the error in Android when calling plug-in methods in Pip mode
 * Modify some configuration parameters of Android and iOS
 * Modified examples and some documents
+* When the app enters the background, the picture in picture still cannot work properly on iOS
 
 ## 2.0.0
 

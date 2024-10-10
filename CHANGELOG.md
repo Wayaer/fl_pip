@@ -1,3 +1,7 @@
+## 3.2.0
+
+* Update gradle version
+
 ## 3.1.0
 
 * Breaking changes , Please refer to the example

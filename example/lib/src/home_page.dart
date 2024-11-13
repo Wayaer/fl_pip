@@ -58,7 +58,12 @@ class HomePage extends StatelessWidget {
             style: const TextStyle(fontSize: 10)),
         Text('isEnabledWhenBackground: ${statusInfo.isEnabledWhenBackground}',
             style: const TextStyle(fontSize: 10)),
-        Filled(text: 'disable', onPressed: FlPiP().disable),
+        Filled(
+          text: 'disable',
+          onPressed: () {
+            FlPiP().disable();
+          },
+        ),
       ]);
 
   Widget get builderDisabled =>
@@ -71,9 +76,10 @@ class HomePage extends StatelessWidget {
                       videoPath: videoPath, packageName: null),
                   android: const FlPiPAndroidConfig(
                       aspectRatio: Rational.maxLandscape()));
-              Future.delayed(const Duration(seconds: 10), () {
-                FlPiP().disable();
-              });
+              /// Fix the the pip auto close.
+              // Future.delayed(const Duration(seconds: 10), () {
+              //   FlPiP().disable();
+              // });
             },
             text: 'Enable PiP'),
         Text(

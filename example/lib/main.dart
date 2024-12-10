@@ -34,9 +34,10 @@ class Timer extends StatelessWidget {
   const Timer({super.key});
 
   @override
-  Widget build(BuildContext context) => CountDown(
-      duration: const Duration(seconds: 500),
-      builder: (Duration duration, bool isRunning, VoidCallback startTiming) {
+  Widget build(BuildContext context) => Counter.down(
+      value: const Duration(seconds: 500),
+      builder: (Duration duration, bool isRunning, VoidCallback startTiming,
+          VoidCallback stopTiming) {
         return Padding(
             padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 12),
             child: Text('timer:${duration.inSeconds.toString()}'));

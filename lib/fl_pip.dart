@@ -225,12 +225,6 @@ class FlPiPAndroidConfig extends FlPiPConfig {
         ...super.toMap(),
         'closeIconPath': closeIconPath,
       };
-
-  String toHex(Color color) =>
-      '#${color.alpha.toRadixString(16).padLeft(2, '0')}'
-      '${color.red.toRadixString(16).padLeft(2, '0')}'
-      '${color.green.toRadixString(16).padLeft(2, '0')}'
-      '${color.blue.toRadixString(16).padLeft(2, '0')}';
 }
 
 /// ios 画中画配置

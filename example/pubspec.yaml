@@ -4,15 +4,15 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.2 <4.0.0'
-  flutter: '>=3.19.0'
+  sdk: '>=3.6.0 <4.0.0'
+  flutter: '>=3.27.0'
 
 dependencies:
   flutter:
     sdk: flutter
   fl_pip:
     path: ../
-  flutter_waya: ^9.10.1
+  flutter_waya: ^10.0.0
 
 dev_dependencies:
   flutter_lints: ^5.0.0

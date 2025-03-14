@@ -86,6 +86,8 @@ class PiPHelper: NSObject, AVPictureInPictureControllerDelegate {
         }
     }
 
+    var audioPath: String?
+
     func enable() -> Bool {
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, options: .mixWithOthers)
@@ -95,17 +97,16 @@ class PiPHelper: NSObject, AVPictureInPictureControllerDelegate {
             return false
         }
         var videoPath = enableArgs["videoPath"] as! String
-        var audioPath = (enableArgs["audioPath"] as! String)
+        audioPath = (enableArgs["audioPath"] as! String)
         let packageName = enableArgs["packageName"] as? String
         if registrar != nil {
             if packageName != nil {
                 videoPath = registrar!.lookupKey(forAsset: videoPath, fromPackage: packageName!)
-                audioPath = registrar!.lookupKey(forAsset: audioPath, fromPackage: packageName!)
+                audioPath = registrar!.lookupKey(forAsset: audioPath!, fromPackage: packageName!)
             } else {
                 videoPath = registrar!.lookupKey(forAsset: videoPath)
-                audioPath = registrar!.lookupKey(forAsset: audioPath)
+                audioPath = registrar!.lookupKey(forAsset: audioPath!)
             }
-            BackgroundAudioPlayer.shared.setAudioPath(path: audioPath)
         }
         let bundleVideoPath = Bundle.main.path(forResource: videoPath, ofType: nil)
         if bundleVideoPath == nil {
@@ -190,7 +191,7 @@ class PiPHelper: NSObject, AVPictureInPictureControllerDelegate {
             } else {
                 let rootController = rootWindow!.rootViewController
                 let flController = (rootController as! FlutterViewController)
-                let engine = flController.engine!
+                let engine = flController.engine
                 engine.viewController = nil
                 let newController = FlutterViewController(engine: engine, nibName: flController.nibName, bundle: flController.nibBundle)
                 flController.dismiss(animated: true)
@@ -227,9 +228,9 @@ class PiPHelper: NSObject, AVPictureInPictureControllerDelegate {
             let firstWindow = UIApplication.shared.windows.first
             if firstWindow!.rootViewController is FlutterViewController {
                 let flController = (firstWindow!.rootViewController as! FlutterViewController)
-                let engine = flController.engine!
+                let engine = flController.engine
                 engine.viewController = nil
-                let newController = FlutterViewController(engine: flController.engine!, nibName: flController.nibName, bundle: flController.nibBundle)
+                let newController = FlutterViewController(engine: flController.engine, nibName: flController.nibName, bundle: flController.nibBundle)
                 flController.dismiss(animated: true)
                 firstWindow!.rootViewController = nil
                 newController.view.frame = rect
@@ -256,7 +257,10 @@ class PiPHelper: NSObject, AVPictureInPictureControllerDelegate {
     }
 
     public func applicationDidEnterBackground(_ application: UIApplication) {
-        BackgroundAudioPlayer.shared.startPlay()
+        if let audioPath=audioPath,!audioPath.isEmpty{
+            BackgroundAudioPlayer.shared.startPlay(audioPath)
+        }
+
         if enabledWhenBackground {
             if createNewEngine {
                 getCreateNewEngine()

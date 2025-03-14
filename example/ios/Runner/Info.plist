@@ -30,6 +30,7 @@
 	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
+		<string>fetch</string>
 		<string>audio</string>
 		<string>processing</string>
 	</array>

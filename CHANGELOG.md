@@ -1,6 +1,7 @@
-## 3.2.0
+## 3.2.1
 
 * Update gradle version
+* Optimize background music playback on iOS backend
 
 ## 3.1.0
 

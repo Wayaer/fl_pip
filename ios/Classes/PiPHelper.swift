@@ -182,24 +182,33 @@ class PiPHelper: NSObject, AVPictureInPictureControllerDelegate {
     }
 
     public func pictureInPictureControllerDidStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-        if let firstWindow = UIApplication.shared.windows.first, rootWindow != nil {
-            let rect = firstWindow.rootViewController?.view.frame ?? CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.height)
-            setPiPStatus(0)
-            if createNewEngine {
-                flutterController?.view.frame = rect
-                firstWindow.rootViewController = flutterController
-            } else {
-                let rootController = rootWindow!.rootViewController
-                let flController = (rootController as! FlutterViewController)
-                let engine = flController.engine
-                engine.viewController = nil
-                let newController = FlutterViewController(engine: engine, nibName: flController.nibName, bundle: flController.nibBundle)
-                flController.dismiss(animated: true)
-                newController.view.frame = rect
-                firstWindow.rootViewController = newController
-            }
+    if let firstWindow = UIApplication.shared.windows.first, rootWindow != nil {
+        let rect = firstWindow.rootViewController?.view.frame ?? CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.height)
+        setPiPStatus(0)
+        
+        if createNewEngine {
+            flutterController?.view.frame = rect
+            firstWindow.rootViewController = flutterController
+        } else {
+            let rootController = rootWindow!.rootViewController
+            let flController = (rootController as! FlutterViewController)
+            
+            // FIX 1: Access engine as an optional
+            let engine = flController.engine
+            
+            // FIX 2: Use optional chaining to set viewController to nil
+            engine?.viewController = nil
+            
+            // FIX 3: Force unwrap 'engine' when passing to the new constructor
+            // because the constructor expects a non-optional FlutterEngine
+            let newController = FlutterViewController(engine: engine!, nibName: flController.nibName, bundle: flController.nibBundle)
+            
+            flController.dismiss(animated: true)
+            newController.view.frame = rect
+            firstWindow.rootViewController = newController
         }
     }
+}
 
     func setPiPStatus(_ int: Int) {
         channels.forEach { channel in
@@ -219,20 +228,25 @@ class PiPHelper: NSObject, AVPictureInPictureControllerDelegate {
             flutterController?.removeFromParent()
             flPiPEngine?.viewController?.dismiss(animated: false)
             flutterController = nil
-            if flPiPEngine != nil {
-                channels.removeValue(forKey: flPiPEngine!.binaryMessenger.hash)
+            if let engine = flPiPEngine {
+                channels.removeValue(forKey: engine.binaryMessenger.hash)
             }
             flPiPEngine = nil
         } else if rootWindow != nil {
             let rect = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.height)
             let firstWindow = UIApplication.shared.windows.first
-            if firstWindow!.rootViewController is FlutterViewController {
-                let flController = (firstWindow!.rootViewController as! FlutterViewController)
+            
+            if let flController = firstWindow?.rootViewController as? FlutterViewController {
                 let engine = flController.engine
-                engine.viewController = nil
-                let newController = FlutterViewController(engine: flController.engine, nibName: flController.nibName, bundle: flController.nibBundle)
+                
+                // FIX: Optional chaining
+                engine?.viewController = nil
+                
+                // FIX: Force unwrap engine! for the new controller
+                let newController = FlutterViewController(engine: engine!, nibName: flController.nibName, bundle: flController.nibBundle)
+                
                 flController.dismiss(animated: true)
-                firstWindow!.rootViewController = nil
+                firstWindow?.rootViewController = nil
                 newController.view.frame = rect
                 rootWindow?.rootViewController = newController
             }

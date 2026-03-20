@@ -1,3 +1,7 @@
+## 3.2.2
+
+* Merge pull request [35](https://github.com/Wayaer/fl_pip/pull/35)
+
 ## 3.2.1
 
 * Update gradle version

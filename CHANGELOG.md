@@ -1,4 +1,4 @@
-## 3.2.2
+## 3.2.3
 
 * Merge pull request [35](https://github.com/Wayaer/fl_pip/pull/35)
 

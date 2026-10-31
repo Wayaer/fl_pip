@@ -1,0 +1,24 @@
+name: example
+description: Demonstrates how to use the fl_pip plugin.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.2 <4.0.0'
+  flutter: '>=3.19.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  fl_pip:
+    path: ../
+  cupertino_icons: ^1.0.6
+  flutter_waya: ^8.7.2
+
+dev_dependencies:
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/

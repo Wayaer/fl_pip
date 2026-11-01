@@ -1,0 +1,17 @@
+# Development-only files excluded from the published package.
+# `pubspec_overrides.yaml` is a local path override and must never be published.
+pubspec_overrides.yaml
+format.sh
+.dart_tool/
+build/
+example/.dart_tool/
+example/build/
+example/android/.gradle/
+example/android/local.properties
+example/ios/.symlinks/
+example/ios/Flutter/ephemeral/
+example/ios/Flutter/Generated.xcconfig
+example/ios/Pods/
+example/ios/Podfile.lock
+example/ohos/entry/src/main/ets/plugins/GeneratedPluginRegistrant.ets
+pubspec_overrides.yaml

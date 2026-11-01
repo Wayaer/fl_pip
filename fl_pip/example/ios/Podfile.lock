@@ -1,0 +1,30 @@
+PODS:
+  - fl_multi_engine (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - fl_pip (4.0.0):
+    - fl_multi_engine
+    - Flutter
+  - Flutter (1.0.0)
+
+DEPENDENCIES:
+  - fl_multi_engine (from `.symlinks/plugins/fl_multi_engine/darwin`)
+  - fl_pip (from `.symlinks/plugins/fl_pip/ios`)
+  - Flutter (from `Flutter`)
+
+EXTERNAL SOURCES:
+  fl_multi_engine:
+    :path: ".symlinks/plugins/fl_multi_engine/darwin"
+  fl_pip:
+    :path: ".symlinks/plugins/fl_pip/ios"
+  Flutter:
+    :path: Flutter
+
+SPEC CHECKSUMS:
+  fl_multi_engine: cfad4ed29e60a1ea4238ccd64c25b512701bfa2a
+  fl_pip: 5653050143e8e33e8343f0ade723baad937b8ca6
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+
+PODFILE CHECKSUM: d7580be19b0305b352edcd06179a9eb6bb5b234a
+
+COCOAPODS: 1.16.2

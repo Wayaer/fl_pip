@@ -1,0 +1,4 @@
+# 示例工程同样指向工作区里的 fl_multi_engine。
+dependency_overrides:
+  fl_multi_engine:
+    path: ../../fl_multi_engine

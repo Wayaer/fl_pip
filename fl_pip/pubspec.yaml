@@ -1,0 +1,39 @@
+name: fl_pip
+description: A Flutter plugin that displays Flutter engines in a native picture-in-picture or float view window on Android, iOS and HarmonyOS.
+version: 4.0.0
+homepage: https://github.com/Wayaer/fl_pip
+repository: https://github.com/Wayaer/fl_pip
+issue_tracker: https://github.com/Wayaer/fl_pip/issues
+topics:
+  - picture-in-picture
+  - pip
+  - android
+  - ios
+
+environment:
+  sdk: '>=3.11.0 <4.0.0'
+  flutter: '>=3.41.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # 画中画引擎的创建/销毁交给引擎管理插件，`present()` 直接返回 FlMultiEngineInfo。
+  # The PiP engine is created and destroyed by the engine manager plugin, and `present()`
+  # returns FlMultiEngineInfo directly.
+  fl_multi_engine: ^0.0.1
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: fl.pip
+        pluginClass: FlPiPPlugin
+      ios:
+        pluginClass: FlPiPPlugin
+      ohos:
+        pluginClass: FlPiPPlugin

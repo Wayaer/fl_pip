@@ -1,0 +1,10 @@
+{
+  "module": {
+    "name": "fl_pip",
+    "type": "har",
+    "deviceTypes": [
+      "default",
+      "tablet"
+    ]
+  }
+}

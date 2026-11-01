@@ -1,0 +1,12 @@
+{
+  "name": "fl_pip",
+  "version": "4.0.0",
+  "description": "Presents Flutter engines and media in the HarmonyOS picture-in-picture window.",
+  "main": "index.ets",
+  "author": "Wayaer",
+  "license": "MIT",
+  "dependencies": {
+    "@ohos/flutter_ohos": "file:./har/flutter.har",
+    "fl_multi_engine": "file:../../fl_multi_engine/ohos"
+  }
+}

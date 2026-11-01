@@ -1,0 +1,52 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ / IDE
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+**/pubspec.lock
+**/build/
+**/coverage/
+**/oh_modules/
+**/node_modules/
+**/Pods/
+**/.symlinks/
+**/Flutter/ephemeral/
+
+# Android / Gradle local files
+.gradle/
+.cxx/
+local.properties
+*.jks
+*.keystore
+key.properties
+
+# OHOS / HarmonyOS local files
+.hvigor/
+.hvigor-output/
+.ohpm/
+*.har
+
+# OS / tooling artifacts
+*.bak
+*.orig
+*.rej
+.trae/

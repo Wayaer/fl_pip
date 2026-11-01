@@ -1,0 +1,43 @@
+name: fl_multi_engine
+description: Creates, destroys and connects named Flutter engines on Android, iOS, macOS, Windows, Linux and HarmonyOS.
+version: 0.0.1
+homepage: https://github.com/Wayaer/fl_pip
+repository: https://github.com/Wayaer/fl_pip
+issue_tracker: https://github.com/Wayaer/fl_pip/issues
+topics:
+  - flutter
+  - engine
+  - multi-engine
+  - plugin
+
+environment:
+  sdk: '>=3.11.0 <4.0.0'
+  flutter: '>=3.41.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: fl.multi.engine
+        pluginClass: FlMultiEnginePlugin
+      ios:
+        pluginClass: FlMultiEnginePlugin
+        sharedDarwinSource: true
+      macos:
+        pluginClass: FlMultiEnginePlugin
+        sharedDarwinSource: true
+      ohos:
+        pluginClass: FlMultiEnginePlugin
+      linux:
+        pluginClass: FlMultiEnginePlugin
+      windows:
+        pluginClass: FlMultiEnginePluginCApi

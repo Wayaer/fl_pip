@@ -1,0 +1,11 @@
+{
+  "name": "fl_multi_engine",
+  "version": "0.0.1",
+  "description": "Creates, destroys and connects named Flutter engines on HarmonyOS.",
+  "main": "index.ets",
+  "author": "Wayaer",
+  "license": "MIT",
+  "dependencies": {
+    "@ohos/flutter_ohos": "file:./har/flutter.har"
+  }
+}

@@ -1,0 +1,16 @@
+name: fl_pip_workspace
+description: Development workspace for the fl_pip and fl_multi_engine Flutter plugins.
+publish_to: 'none'
+version: 1.0.0
+repository: https://github.com/Wayaer/fl_pip
+
+environment:
+  sdk: '>=3.13.0 <4.0.0'
+  flutter: '>=3.47.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^6.0.0

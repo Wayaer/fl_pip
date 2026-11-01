@@ -1,0 +1,10 @@
+{
+  "module": {
+    "name": "fl_multi_engine",
+    "type": "har",
+    "deviceTypes": [
+      "default",
+      "tablet"
+    ]
+  }
+}
